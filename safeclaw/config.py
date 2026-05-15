@@ -9,5 +9,10 @@ BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 WORKSPACE = Path(os.getenv("WORKSPACE", "./workspace")).resolve()
 ALLOW_SHELL = os.getenv("ALLOW_SHELL", "false").lower() == "true"
+MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "6"))
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM", "")
 
 WORKSPACE.mkdir(parents=True, exist_ok=True)

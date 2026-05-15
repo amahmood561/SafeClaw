@@ -1,0 +1,4 @@
+safeclaw/__pycache__/*
+workspace/
+.env
+*.pyc

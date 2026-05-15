@@ -26,13 +26,13 @@ curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.s
 Install somewhere else:
 
 ```bash
-SAFECLAW_DIR="$HOME/apps/safeclaw" curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_DIR="$HOME/apps/safeclaw" bash
 ```
 
 Install and immediately run a task:
 
 ```bash
-OPENAI_API_KEY=sk-your-key SAFECLAW_TASK="make me a todo list app plan" curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | OPENAI_API_KEY=sk-your-key SAFECLAW_TASK="make me a todo list app plan" bash
 ```
 
 ## Setup

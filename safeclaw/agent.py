@@ -4,7 +4,7 @@ from typing import Any
 
 from .config import MAX_TOOL_STEPS, MODEL, WORKSPACE
 from .llm import complete_message
-from .sessions import load_session, recall, remember, save_session
+from .sessions import auto_compact_session, forget_memory, load_session, recall, remember, save_session, search_memory, session_status
 from .tools import TOOL_SPECS, available_tools, list_files, run_tool
 
 SESSION_TOOL_SPECS: list[dict[str, Any]] = [
@@ -28,6 +28,38 @@ SESSION_TOOL_SPECS: list[dict[str, Any]] = [
             "parameters": {"type": "object", "properties": {}},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_memory",
+            "description": "Search durable memory notes for this session.",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "forget",
+            "description": "Delete durable memory notes by id or matching text for this session.",
+            "parameters": {
+                "type": "object",
+                "properties": {"target": {"type": "string"}},
+                "required": ["target"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "session_status",
+            "description": "Return current session status including message and memory counts.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
 
 
@@ -42,6 +74,12 @@ def _tool_message(session_id: str, tool_call: dict[str, Any]) -> dict[str, str]:
             result = remember(session_id, arguments.get("note", ""))
         elif name == "recall_memory":
             result = recall(session_id)
+        elif name == "search_memory":
+            result = search_memory(session_id, arguments.get("query", ""))
+        elif name == "forget":
+            result = forget_memory(session_id, arguments.get("target", ""))
+        elif name == "session_status":
+            result = json.dumps(session_status(session_id), indent=2)
         else:
             result = run_tool(name, arguments)
     return {
@@ -89,6 +127,7 @@ User task:
     logs.mkdir(exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     (logs / f"task-{stamp}.md").write_text(f"# Task\n\n{task}\n\n# Result\n\n{result}\n")
+    auto_compact_session(session)
     save_session(session)
     return result
 

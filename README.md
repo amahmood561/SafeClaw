@@ -196,8 +196,16 @@ safeclaw run "your task here" --session default
 safeclaw chat --session default
 safeclaw tools
 safeclaw sessions
+safeclaw status --session default
+safeclaw session-config --session default --model gpt-4.1-mini --permission-profile readonly
+safeclaw memory --session default
+safeclaw memory-search "thing to find" --session default
+safeclaw memory-forget "memory id or text" --session default
+safeclaw memory-edit 1 "updated memory note" --session default
 safeclaw reset --session default
 safeclaw compact --session default
+safeclaw export --session default
+safeclaw import path/to/session-export.json --session restored
 safeclaw whatsapp --port 8080
 ```
 
@@ -231,9 +239,38 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 
 ## Sessions and tools
 
-Conversations are saved under `.safeclaw_sessions` in your workspace. The agent now
-uses OpenAI-style structured tool calls for file reads, file writes, shell commands,
-and optional WhatsApp sends.
+Conversations are saved under `.safeclaw_sessions` in your workspace. Durable
+memory is saved under `.safeclaw_memory`. The agent now uses OpenAI-style
+structured tool calls for file reads, file writes, file search, file edits,
+patches, URL fetches, web search, shell commands, session status, memory, and
+optional WhatsApp sends.
+
+Available local tools include:
+
+- `list_files(path='.')`
+- `read_file(path)`
+- `write_file(path, content, backup=True, overwrite=True)`
+- `search_files(query, path='.', include_content=True)`
+- `edit_file(path, old, new, replace_all=False, backup=True)`
+- `apply_patch(patch, backup=True)`
+- `fetch_url(url)`
+- `web_search(query)`
+- `shell(command)`, disabled unless `ALLOW_SHELL=true`
+- `send_whatsapp(to, body)`, if Twilio env vars are configured
+
+Available session and memory tools include:
+
+- `remember(note)`
+- `recall_memory()`
+- `search_memory(query)`
+- `forget(target)`
+- `session_status()`
+
+File writes and edits create backups by default under `.safeclaw_backups`.
+Sessions can store per-session model and permission-profile metadata with
+`safeclaw session-config`. Permission profiles are currently metadata for
+roadmap/configuration work; enforcement still depends on the existing safety
+settings such as `ALLOW_SHELL=false`.
 
 ## Safety
 
@@ -360,21 +397,39 @@ should borrow the parts that help a small agent become trustworthy and useful.
 
 ### Phase 5: Better agent capabilities
 
-- Add automatic compaction when session history gets too long.
+Agent tools:
+
+- Add `search_files`.
+- Add `edit_file`.
+- Add `apply_patch`.
+- Add `fetch_url`.
+- Add `web_search`.
+- Add `session_status`.
+- Add `forget`.
+- Add safer file overwrite and backup behavior.
 - Trim large tool results before sending them back to the model.
-- Add more structured tools:
+- Add task summaries and structured run records.
+- Add browser automation only after the permission model is strong enough.
+
+Memory and sessions:
+
+- Add better memory management.
+- Add memory search.
+- Add edit/delete for saved memories.
+- Add automatic session compaction when session history gets too long.
+- Add session export/import.
+- Add per-session model and permission settings.
+- Keep structured tools for:
   - `search_files`
   - `edit_file`
   - `apply_patch`
-  - `remember`
-  - `forget`
-  - `session_status`
   - `fetch_url`
   - `web_search`
-- Add browser automation only after the permission model is strong enough.
+  - `session_status`
+  - `remember`
+  - `forget`
 - Add model fallback handling.
 - Add max spend or max token limits per session.
-- Add task summaries and structured run records.
 
 ### Phase 6: Model provider abstraction
 

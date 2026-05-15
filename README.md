@@ -14,6 +14,27 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 - Has a simple tool system you can extend
 - Keeps task logs locally
 
+## Quick install
+
+Install SafeClaw into `~/safeclaw`, create a virtual environment, install the
+CLI, copy `.env.example` to `.env`, and run a local CLI check:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+```
+
+Install somewhere else:
+
+```bash
+SAFECLAW_DIR="$HOME/apps/safeclaw" curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+```
+
+Install and immediately run a task:
+
+```bash
+OPENAI_API_KEY=sk-your-key SAFECLAW_TASK="make me a todo list app plan" curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+```
+
 ## Setup
 
 ```bash

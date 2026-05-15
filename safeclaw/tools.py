@@ -2,6 +2,7 @@ import html
 import os
 import re
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,8 @@ import requests
 
 from .config import (
     ALLOW_SHELL,
+    APPROVAL_MODE,
+    PERMISSION_PROFILE,
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_WHATSAPP_FROM,
@@ -19,6 +22,22 @@ from .config import (
 
 MAX_TOOL_OUTPUT = 12000
 MAX_READ_BYTES = 250000
+
+READ_TOOLS = {"list_files", "read_file", "search_files"}
+WRITE_TOOLS = {"write_file", "edit_file", "apply_patch"}
+NETWORK_TOOLS = {"fetch_url", "web_search"}
+SHELL_TOOLS = {"shell"}
+MESSAGING_TOOLS = {"send_whatsapp"}
+RISKY_TOOLS = WRITE_TOOLS | NETWORK_TOOLS | SHELL_TOOLS | MESSAGING_TOOLS
+
+PROFILE_CAPABILITIES = {
+    "readonly": READ_TOOLS,
+    "workspace-write": READ_TOOLS | WRITE_TOOLS,
+    "network-allow": READ_TOOLS | NETWORK_TOOLS,
+    "shell-ask": READ_TOOLS | SHELL_TOOLS,
+    "shell-allow": READ_TOOLS | SHELL_TOOLS,
+    "messaging-allow": READ_TOOLS | MESSAGING_TOOLS,
+}
 
 
 def safe_path(path: str) -> Path:
@@ -45,6 +64,55 @@ def _backup_file(target: Path) -> Path:
     backup = backups / f"{safe_name}.{stamp}.bak"
     backup.write_bytes(target.read_bytes())
     return backup
+
+
+def _normal_profile(permission_profile: str | None = None) -> str:
+    profile = permission_profile or PERMISSION_PROFILE or "readonly"
+    return profile if profile in PROFILE_CAPABILITIES else "readonly"
+
+
+def _preview_arguments(arguments: dict[str, Any], limit: int = 500) -> str:
+    redacted = dict(arguments)
+    for key in list(redacted):
+        if key.lower() in {"content", "patch", "body"}:
+            value = str(redacted[key])
+            redacted[key] = value[:200] + ("..." if len(value) > 200 else "")
+    text = repr(redacted)
+    return text[:limit] + ("..." if len(text) > limit else "")
+
+
+def _approval_required(tool_name: str, profile: str, approval_mode: str) -> bool:
+    if approval_mode == "auto":
+        return False
+    if tool_name == "shell" and profile == "shell-allow":
+        return False
+    return tool_name in RISKY_TOOLS
+
+
+def _ask_approval(tool_name: str, arguments: dict[str, Any], profile: str, approval_mode: str, interactive: bool) -> str | None:
+    if approval_mode == "deny":
+        return f"Blocked by approval mode: {tool_name} requires approval."
+    if not _approval_required(tool_name, profile, approval_mode):
+        return None
+    if not interactive:
+        return f"Blocked: {tool_name} requires interactive approval."
+    if not sys.stdin.isatty():
+        return f"Blocked: {tool_name} requires terminal approval."
+    print("\nSafeClaw approval required", file=sys.stderr)
+    print(f"Tool: {tool_name}", file=sys.stderr)
+    print(f"Profile: {profile}", file=sys.stderr)
+    print(f"Args: {_preview_arguments(arguments)}", file=sys.stderr)
+    answer = input("Allow this action? [y/N] ").strip().lower()
+    if answer not in {"y", "yes"}:
+        return f"Denied by user: {tool_name}"
+    return None
+
+
+def _permission_error(tool_name: str, profile: str) -> str | None:
+    allowed = PROFILE_CAPABILITIES[_normal_profile(profile)]
+    if tool_name in allowed:
+        return None
+    return f"Blocked by permission profile '{profile}': {tool_name} is not allowed."
 
 
 def list_files(path: str = ".") -> str:
@@ -385,7 +453,13 @@ TOOL_SPECS: list[dict[str, Any]] = [
 ]
 
 
-def run_tool(name: str, arguments: dict[str, Any]) -> str:
+def run_tool(
+    name: str,
+    arguments: dict[str, Any],
+    permission_profile: str | None = None,
+    approval_mode: str | None = None,
+    interactive: bool = True,
+) -> str:
     functions = {
         "list_files": list_files,
         "read_file": read_file,
@@ -400,6 +474,13 @@ def run_tool(name: str, arguments: dict[str, Any]) -> str:
     }
     if name not in functions:
         return f"Unknown tool: {name}"
+    profile = _normal_profile(permission_profile)
+    blocked = _permission_error(name, profile)
+    if blocked:
+        return blocked
+    approval = _ask_approval(name, arguments, profile, approval_mode or APPROVAL_MODE, interactive)
+    if approval:
+        return approval
     try:
         return str(functions[name](**arguments))
     except Exception as exc:
@@ -419,6 +500,14 @@ Available local tools:
 - web_search(query)
 - shell(command) disabled unless ALLOW_SHELL=true
 - send_whatsapp(to, body) if Twilio env vars are configured
+
+Permission profiles:
+- readonly: read/list/search workspace files only
+- workspace-write: readonly plus write_file/edit_file/apply_patch
+- network-allow: readonly plus fetch_url/web_search
+- shell-ask: readonly plus shell with approval and ALLOW_SHELL=true
+- shell-allow: readonly plus shell without approval and ALLOW_SHELL=true
+- messaging-allow: readonly plus send_whatsapp
 
 This version supports automatic OpenAI-style function calling.
 """.strip()

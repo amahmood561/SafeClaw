@@ -7,6 +7,8 @@ REF_DEFAULT="main"
 BASE_URL_DEFAULT="https://api.openai.com/v1"
 MODEL_DEFAULT="gpt-4.1-mini"
 WORKSPACE_DEFAULT="./workspace"
+PERMISSION_PROFILE_DEFAULT="readonly"
+APPROVAL_MODE_DEFAULT="ask"
 MAX_TOOL_STEPS_DEFAULT="6"
 
 if [ -r /dev/tty ]; then
@@ -89,10 +91,13 @@ write_env() {
   local model="$4"
   local workspace="$5"
   local allow_shell="$6"
-  local max_tool_steps="$7"
-  local twilio_sid="$8"
-  local twilio_token="$9"
-  local twilio_from="${10}"
+  local permission_profile="$7"
+  local approval_mode="$8"
+  local max_tool_steps="$9"
+  local twilio_sid="${10}"
+  local twilio_token="${11}"
+  local twilio_from="${12}"
+  local allowed_senders="${13}"
 
   cat > "$env_file" <<EOF
 # Use OpenAI-compatible API endpoint
@@ -103,6 +108,8 @@ OPENAI_MODEL=$model
 # Agent settings
 WORKSPACE=$workspace
 ALLOW_SHELL=$allow_shell
+SAFECLAW_PERMISSION_PROFILE=$permission_profile
+SAFECLAW_APPROVAL_MODE=$approval_mode
 MAX_TOOL_STEPS=$max_tool_steps
 
 # Optional Twilio WhatsApp outbound support.
@@ -111,6 +118,7 @@ MAX_TOOL_STEPS=$max_tool_steps
 TWILIO_ACCOUNT_SID=$twilio_sid
 TWILIO_AUTH_TOKEN=$twilio_token
 TWILIO_WHATSAPP_FROM=$twilio_from
+SAFECLAW_ALLOWED_SENDERS=$allowed_senders
 EOF
   chmod 600 "$env_file"
 }
@@ -154,6 +162,8 @@ Shell commands are disabled by default. For non-dev users, keep shell disabled.
 EOF
 
 workspace="$(prompt "Workspace path, relative to SafeClaw install folder is OK" "$WORKSPACE_DEFAULT")"
+permission_profile="$(prompt "Permission profile: readonly, workspace-write, network-allow, shell-ask, shell-allow, messaging-allow" "$PERMISSION_PROFILE_DEFAULT")"
+approval_mode="$(prompt "Approval mode: ask, auto, deny" "$APPROVAL_MODE_DEFAULT")"
 if prompt_yes_no "Allow shell commands" "n"; then
   allow_shell="true"
   warn "Shell commands will be enabled. Only do this if you trust the tasks you run."
@@ -173,10 +183,12 @@ EOF
 twilio_sid=""
 twilio_token=""
 twilio_from="whatsapp:+14155238886"
+allowed_senders=""
 if prompt_yes_no "Configure Twilio WhatsApp outbound now" "n"; then
   twilio_sid="$(prompt "Twilio Account SID" "")"
   twilio_token="$(prompt_secret "Twilio Auth Token, hidden input")"
   twilio_from="$(prompt "Twilio WhatsApp From number" "$twilio_from")"
+  allowed_senders="$(prompt "Allowed WhatsApp sender numbers, comma-separated, optional" "")"
 fi
 
 info "Installing prerequisites and SafeClaw"
@@ -210,7 +222,7 @@ if [ -f .env ]; then
 fi
 
 info "Writing .env"
-write_env ".env" "$api_key" "$base_url" "$model" "$workspace" "$allow_shell" "$max_tool_steps" "$twilio_sid" "$twilio_token" "$twilio_from"
+write_env ".env" "$api_key" "$base_url" "$model" "$workspace" "$allow_shell" "$permission_profile" "$approval_mode" "$max_tool_steps" "$twilio_sid" "$twilio_token" "$twilio_from" "$allowed_senders"
 
 info "Checking SafeClaw CLI"
 .venv/bin/safeclaw tools

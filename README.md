@@ -206,12 +206,19 @@ safeclaw reset --session default
 safeclaw compact --session default
 safeclaw export --session default
 safeclaw import path/to/session-export.json --session restored
+safeclaw whatsapp-setup
 safeclaw whatsapp --port 8080
 ```
 
 ## WhatsApp
 
-This starter supports the bare minimum Twilio WhatsApp webhook.
+This starter supports a Twilio WhatsApp webhook.
+
+For an easy setup checklist and config status, run:
+
+```bash
+safeclaw whatsapp-setup
+```
 
 1. Start the webhook:
 
@@ -235,7 +242,26 @@ Outbound WhatsApp tool calls require:
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+SAFECLAW_ALLOWED_SENDERS=whatsapp:+15551234567
 ```
+
+`SAFECLAW_ALLOWED_SENDERS` is strongly recommended. If it is set, only those
+WhatsApp senders can use your SafeClaw instance. If it is blank, any sender that
+can reach the webhook can talk to it.
+
+WhatsApp commands:
+
+- `/help`
+- `/status`
+- `/memory`
+- `/reset`
+- `/permissions`
+- `/permissions readonly`
+- `/model gpt-4.1-mini`
+
+Risky actions that require terminal approval are blocked over WhatsApp instead
+of hanging. For a personal always-available WhatsApp assistant, keep the profile
+at `readonly` or only enable the narrow profile you need.
 
 ## Sessions and tools
 
@@ -267,10 +293,8 @@ Available session and memory tools include:
 - `session_status()`
 
 File writes and edits create backups by default under `.safeclaw_backups`.
-Sessions can store per-session model and permission-profile metadata with
-`safeclaw session-config`. Permission profiles are currently metadata for
-roadmap/configuration work; enforcement still depends on the existing safety
-settings such as `ALLOW_SHELL=false`.
+Sessions can store per-session model and permission-profile settings with
+`safeclaw session-config`.
 
 ## Safety
 
@@ -281,6 +305,38 @@ ALLOW_SHELL=true safeclaw run "list files"
 ```
 
 Keep it disabled unless you trust the task.
+
+SafeClaw also supports enforced permission profiles:
+
+- `readonly`: can list, read, and search workspace files.
+- `workspace-write`: `readonly` plus `write_file`, `edit_file`, and `apply_patch`.
+- `network-allow`: `readonly` plus `fetch_url` and `web_search`.
+- `shell-ask`: `readonly` plus `shell`, with approval and `ALLOW_SHELL=true`.
+- `shell-allow`: `readonly` plus `shell`, without approval, and `ALLOW_SHELL=true`.
+- `messaging-allow`: `readonly` plus `send_whatsapp`.
+
+Set the default profile in `.env`:
+
+```env
+SAFECLAW_PERMISSION_PROFILE=readonly
+SAFECLAW_APPROVAL_MODE=ask
+```
+
+Or set it per session:
+
+```bash
+safeclaw session-config --session default --permission-profile workspace-write
+```
+
+Approval modes:
+
+- `ask`: ask in the terminal before risky actions.
+- `deny`: block risky actions that require approval.
+- `auto`: skip approval prompts.
+
+SafeClaw asks before file writes, file edits, patches, network fetches, shell
+commands, and outbound WhatsApp sends when approval is enabled. WhatsApp runs in
+non-interactive mode, so actions that need approval are blocked.
 
 ## SafeClaw roadmap
 

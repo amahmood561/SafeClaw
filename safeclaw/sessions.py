@@ -196,10 +196,13 @@ def update_session_settings(
 ) -> str:
     session = load_session(session_id)
     changes = []
+    valid_profiles = {"readonly", "workspace-write", "network-allow", "shell-ask", "shell-allow", "messaging-allow"}
     if model is not None:
         session["model"] = model or None
         changes.append("model")
     if permission_profile is not None:
+        if permission_profile and permission_profile not in valid_profiles:
+            return f"Unknown permission profile: {permission_profile}"
         session["permission_profile"] = permission_profile or None
         changes.append("permission_profile")
     if not changes:

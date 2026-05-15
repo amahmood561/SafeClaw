@@ -17,23 +17,29 @@ from .sessions import (
 )
 from .tools import available_tools
 from .config import WORKSPACE
-from .whatsapp import serve_whatsapp
+from .whatsapp import serve_whatsapp, whatsapp_setup_status
 
 app = typer.Typer(help="SafeClaw: a self-hosted agent with explicit permissions")
 console = Console()
 
 @app.command()
-def run(task: str, session: str = "default", model: str = ""):
+def run(task: str, session: str = "default", model: str = "", permission_profile: str = ""):
     """Run one task."""
     console.print(Panel.fit("SafeClaw", subtitle=str(WORKSPACE)))
     try:
-        result = run_task(task, session_id=session, model=model or None)
+        result = run_task(
+            task,
+            session_id=session,
+            model=model or None,
+            permission_profile=permission_profile or None,
+            interactive=True,
+        )
         console.print(result)
     except Exception as exc:
         console.print(f"[red]Error:[/red] {exc}")
 
 @app.command()
-def chat(session: str = "default", model: str = ""):
+def chat(session: str = "default", model: str = "", permission_profile: str = ""):
     """Interactive task loop."""
     console.print(Panel.fit("SafeClaw Chat", subtitle="type exit/reset/memory to quit/reset/show memory"))
     while True:
@@ -48,7 +54,15 @@ def chat(session: str = "default", model: str = ""):
         if command in {"memory", "/memory"}:
             console.print(recall(session))
             continue
-        console.print(run_task(task, session_id=session, model=model or None))
+        console.print(
+            run_task(
+                task,
+                session_id=session,
+                model=model or None,
+                permission_profile=permission_profile or None,
+                interactive=True,
+            )
+        )
 
 @app.command()
 def tools():
@@ -116,6 +130,11 @@ def import_(path: str, session: str = ""):
 def whatsapp(host: str = "0.0.0.0", port: int = 8080):
     """Run a Twilio-compatible WhatsApp webhook."""
     serve_whatsapp(host=host, port=port)
+
+@app.command("whatsapp-setup")
+def whatsapp_setup(public_url: str = "https://your-public-url"):
+    """Show easy WhatsApp setup instructions and config status."""
+    console.print(whatsapp_setup_status(public_url))
 
 if __name__ == "__main__":
     app()

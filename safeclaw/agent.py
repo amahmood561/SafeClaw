@@ -63,7 +63,12 @@ SESSION_TOOL_SPECS: list[dict[str, Any]] = [
 ]
 
 
-def _tool_message(session_id: str, tool_call: dict[str, Any]) -> dict[str, str]:
+def _tool_message(
+    session_id: str,
+    tool_call: dict[str, Any],
+    permission_profile: str | None = None,
+    interactive: bool = True,
+) -> dict[str, str]:
     name = tool_call["function"]["name"]
     try:
         arguments = json.loads(tool_call["function"].get("arguments") or "{}")
@@ -81,7 +86,7 @@ def _tool_message(session_id: str, tool_call: dict[str, Any]) -> dict[str, str]:
         elif name == "session_status":
             result = json.dumps(session_status(session_id), indent=2)
         else:
-            result = run_tool(name, arguments)
+            result = run_tool(name, arguments, permission_profile=permission_profile, interactive=interactive)
     return {
         "role": "tool",
         "tool_call_id": tool_call["id"],
@@ -90,11 +95,20 @@ def _tool_message(session_id: str, tool_call: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def run_task(task: str, session_id: str = "default", model: str | None = None) -> str:
+def run_task(
+    task: str,
+    session_id: str = "default",
+    model: str | None = None,
+    permission_profile: str | None = None,
+    interactive: bool = True,
+) -> str:
     session = load_session(session_id)
     if model:
         session["model"] = model
+    if permission_profile:
+        session["permission_profile"] = permission_profile
     active_model = session.get("model") or MODEL
+    active_profile = session.get("permission_profile") or permission_profile
 
     context = f"""
 Workspace: {WORKSPACE}
@@ -105,6 +119,8 @@ Memory for this session:
 {recall(session_id)}
 
 {available_tools()}
+
+Current permission profile: {active_profile or "readonly"}
 
 User task:
 {task}
@@ -119,7 +135,14 @@ User task:
             result = message.get("content", "")
             break
         for tool_call in tool_calls:
-            session["messages"].append(_tool_message(session_id, tool_call))
+            session["messages"].append(
+                _tool_message(
+                    session_id,
+                    tool_call,
+                    permission_profile=active_profile,
+                    interactive=interactive,
+                )
+            )
     else:
         result = "Stopped after reaching the tool step limit."
 

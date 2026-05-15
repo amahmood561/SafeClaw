@@ -35,7 +35,83 @@ Install and immediately run a task:
 curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | OPENAI_API_KEY=sk-your-key SAFECLAW_TASK="make me a todo list app plan" bash
 ```
 
+For a friendlier step-by-step installer that asks for your settings:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)
+```
+
 ## Setup
+
+### One-line setup
+
+For most users, use the install script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+```
+
+The script will:
+
+- Clone or update SafeClaw in `~/safeclaw`.
+- Create `.venv`.
+- Install Python dependencies.
+- Install the `safeclaw` CLI in editable mode.
+- Copy `.env.example` to `.env` if `.env` does not exist.
+- Run `safeclaw tools` as a local smoke check.
+
+Install to a custom directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_DIR="$HOME/apps/safeclaw" bash
+```
+
+Install from a different repo or branch:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_REPO="https://github.com/yourname/SafeClaw.git" SAFECLAW_REF="main" bash
+```
+
+Install and immediately run a task:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | OPENAI_API_KEY=sk-your-key SAFECLAW_TASK="make me a todo list app plan" bash
+```
+
+After install:
+
+```bash
+cd ~/safeclaw
+source .venv/bin/activate
+```
+
+Edit `.env` and set `OPENAI_API_KEY`.
+
+### Guided setup for non-developers
+
+If you want the installer to walk you through setup, use the guided installer:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)
+```
+
+The guided installer asks for:
+
+- Install folder.
+- Git repo and branch.
+- OpenAI API key.
+- OpenAI-compatible base URL.
+- Model name.
+- Workspace folder.
+- Whether shell commands should be allowed.
+- Maximum tool steps per task.
+- Optional Twilio WhatsApp settings.
+- Whether to run a quick AI test task.
+
+It then creates `.venv`, installs SafeClaw, writes `.env`, backs up any existing
+`.env`, runs `safeclaw tools`, and shows the commands to start using SafeClaw.
+
+### Manual setup
 
 ```bash
 cd safeclaw

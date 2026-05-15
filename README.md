@@ -89,27 +89,80 @@ Edit `.env` and set `OPENAI_API_KEY`.
 
 ### Guided setup for non-developers
 
-If you want the installer to walk you through setup, use the guided installer:
+If you want the installer to walk you through setup step by step, use the guided
+installer:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)
 ```
 
+This is the recommended path for non-developers because it explains each choice
+as it goes and keeps safer defaults enabled.
+
 The guided installer asks for:
 
 - Install folder.
 - Git repo and branch.
-- OpenAI API key.
-- OpenAI-compatible base URL.
-- Model name.
+- OpenAI API key. This can be left blank and added later.
+- OpenAI-compatible base URL. The default is `https://api.openai.com/v1`.
+- Model name. The default is `gpt-4.1-mini`.
 - Workspace folder.
-- Whether shell commands should be allowed.
-- Maximum tool steps per task.
+- Whether shell commands should be allowed. The default is no.
+- Maximum tool steps per task. The default is `6`.
 - Optional Twilio WhatsApp settings.
 - Whether to run a quick AI test task.
 
-It then creates `.venv`, installs SafeClaw, writes `.env`, backs up any existing
-`.env`, runs `safeclaw tools`, and shows the commands to start using SafeClaw.
+The guided installer does this for you:
+
+- Checks for `git` and `python3`.
+- Clones or updates SafeClaw.
+- Creates `.venv`.
+- Upgrades `pip`.
+- Installs Python dependencies from `requirements.txt`.
+- Installs the `safeclaw` CLI in editable mode.
+- Backs up an existing `.env` if one already exists.
+- Writes a new `.env` with your answers.
+- Sets `.env` permissions to owner-read/write only.
+- Runs `safeclaw tools` as a local smoke check.
+- Optionally runs a short AI test task if you entered an API key.
+- Prints the exact commands to start using SafeClaw.
+
+The generated `.env` includes:
+
+```env
+OPENAI_API_KEY=
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4.1-mini
+WORKSPACE=./workspace
+ALLOW_SHELL=false
+MAX_TOOL_STEPS=6
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+```
+
+After guided setup, start using SafeClaw:
+
+```bash
+cd ~/safeclaw
+source .venv/bin/activate
+safeclaw run "make me a todo list app plan"
+```
+
+Start chat mode:
+
+```bash
+safeclaw chat
+```
+
+Start the WhatsApp webhook:
+
+```bash
+safeclaw whatsapp --port 8080
+```
+
+If you skipped the API key during setup, edit `.env` and set `OPENAI_API_KEY`
+before running an AI task.
 
 ### Manual setup
 

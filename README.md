@@ -103,33 +103,94 @@ trust, local control, and clear permissions.
 SafeClaw is not trying to be the biggest agent. It is trying to be the one you
 can actually trust running on your machine.
 
-### Phase 1: Rename and identity
+Compared with larger agent platforms such as OpenClaw, SafeClaw should compete
+on being understandable, auditable, and safe by construction. The product
+promise is:
+
+> SafeClaw is a self-hosted assistant you can trust with local tasks because
+> every capability is bounded, inspectable, and permissioned.
+
+### Current positioning
+
+SafeClaw today is a small Python assistant with:
+
+- Terminal tasks through `safeclaw run` and `safeclaw chat`.
+- Basic Twilio WhatsApp webhook support.
+- OpenAI-compatible chat completions.
+- Structured tool calls for file reads, file writes, shell commands, and WhatsApp sends.
+- Workspace-only file access.
+- Local session files and memory notes.
+- Shell execution disabled by default.
+
+OpenClaw is positioned more like a full agent platform and ecosystem, with many
+channels, skills, model providers, sandboxing, config, cost controls, and
+installation/onboarding flows. SafeClaw should not copy all of that blindly. It
+should borrow the parts that help a small agent become trustworthy and useful.
+
+### OpenClaw comparison
+
+| Area | SafeClaw today | Larger OpenClaw-style platform | Missing in SafeClaw |
+| --- | --- | --- | --- |
+| Channels | Terminal and basic Twilio WhatsApp | Many channels such as WhatsApp, Telegram, Discord, Slack, Teams, Signal, Matrix, iMessage, and WebChat | Channel adapter architecture, Telegram, Discord, Slack, and web UI |
+| Skills | Hardcoded Python tools | Installable skills with manifests, config, lifecycle commands, and registry | Skill system, skill install/update/configure, marketplace or registry |
+| Security | Workspace path guard and shell disabled by default | Sandbox, permissions, audit logs, network controls, and rate limits | Real sandboxing, permission grants, audit log, outbound network controls |
+| Models | OpenAI-compatible API only | Multiple cloud and local model providers | Provider abstraction, local model support, fallback models |
+| Memory | Per-session markdown memory | Persistent scoped user and agent memory | Better memory model, search, forget/edit memory, memory scopes |
+| Automation | One-shot task loop and chat | Persistent background agent with triggers | Daemon mode, schedules, recurring jobs, wake commands |
+| Browser and web | None | Browser automation, web extraction, web search | Browser tool, fetch URL, search provider, form automation |
+| Config | `.env` only | YAML/TOML config for agents, models, channels, and permissions | `safeclaw.toml`, profiles, config validation |
+| Operations | Manual run | Onboarding, install scripts, daemon, reload, status | `init`, `doctor`, service install, health/status commands |
+| Observability | Local markdown task logs | Audit logging, usage tracking, monitoring hooks | Structured logs, token/cost tracking, tool history commands |
+| Multi-agent | None | Multiple named agents with roles and permissions | Agent definitions, role-specific prompts, per-agent model/permission config |
+| Files and coding | read/write/list/shell | Broader file operations, code execution, scripts, integrations | patch/edit/search tools, git/GitHub integration |
+
+### Phase 1: Foundation and reliability
 
 - Done: the package, app, prompts, logs, and docs are named SafeClaw.
 - Done: the CLI command is `safeclaw`.
 - Done: the tagline is `SafeClaw: a self-hosted agent with explicit permissions.`
-
-### Phase 2: Make the current core reliable
-
 - Add a `.gitignore` for `.env`, `workspace/`, `__pycache__/`, logs, and session data.
 - Add tests for session save/load/reset/compact.
 - Add tests for safe path protection and tool dispatch.
 - Add tests for the WhatsApp webhook reset/reply flow.
 - Add better errors when API keys or Twilio settings are missing.
 - Add a `safeclaw doctor` command that checks local setup.
+- Add a `safeclaw init` command that generates starter `.env` and config files.
 
-### Phase 3: Safety model
+### Phase 2: Safety model
 
 - Replace the single `ALLOW_SHELL=true/false` flag with permission profiles:
   - `readonly`
   - `workspace-write`
   - `shell-ask`
   - `shell-allow`
+- Add optional network profiles:
+  - `network-deny`
+  - `network-allowlist`
+  - `network-allow`
 - Add allowlists and denylists for shell commands.
 - Add approval mode before dangerous actions.
-- Log every tool call with timestamp, session, arguments, and result.
+- Log every tool call with timestamp, session, tool name, arguments, result preview, permission profile, and approved/blocked status.
 - Add a panic switch to disable shell and outbound messaging.
 - Keep workspace-only file access as a hard rule.
+- Redact secrets from logs and tool outputs.
+- Add output limits, command timeouts, and max file read sizes.
+
+### Phase 3: Sandbox and trust
+
+- Add real isolation for risky tools where possible.
+- Run shell commands with tighter environment variables and working-directory controls.
+- Add disk/output quotas for tool execution.
+- Add outbound domain allowlists for network-capable tools.
+- Add `SECURITY.md`.
+- Add `PRIVACY.md`.
+- Add a threat model explaining:
+  - what data stays local
+  - what goes to the LLM provider
+  - what Twilio can see
+  - what files the agent can touch
+  - what shell access means
+- Make "no telemetry" explicit if that remains true.
 
 ### Phase 4: WhatsApp production readiness
 
@@ -138,27 +199,80 @@ can actually trust running on your machine.
 - Add rate limiting per sender.
 - Add max response length and message chunking for WhatsApp.
 - Add WhatsApp commands:
+  - `/help`
   - `/reset`
   - `/memory`
-  - `/help`
-  - `/model`
   - `/status`
+  - `/model`
+  - `/permissions`
+- Add better error handling for slow model responses.
+- Add channel-specific message rendering for plain text, long messages, and command responses.
 
-### Phase 5: Better agent loop
+### Phase 5: Better agent capabilities
 
 - Add automatic compaction when session history gets too long.
 - Trim large tool results before sending them back to the model.
 - Add more structured tools:
+  - `search_files`
   - `edit_file`
   - `apply_patch`
-  - `search_files`
   - `remember`
   - `forget`
   - `session_status`
+  - `fetch_url`
+  - `web_search`
+- Add browser automation only after the permission model is strong enough.
 - Add model fallback handling.
 - Add max spend or max token limits per session.
+- Add task summaries and structured run records.
 
-### Phase 6: Install and run
+### Phase 6: Model provider abstraction
+
+- Support provider/model identifiers such as:
+  - `openai/gpt-4.1-mini`
+  - `anthropic/claude-sonnet`
+  - `google/gemini`
+  - `ollama/llama`
+- Support local models through Ollama or another OpenAI-compatible local endpoint.
+- Add fallback models for outages, rate limits, and cost limits.
+- Track token usage by session and model.
+- Add daily and monthly budget limits.
+- Add `safeclaw models` and `safeclaw usage` commands.
+
+### Phase 7: Channels and adapters
+
+- Introduce a channel adapter interface for:
+  - inbound message normalization
+  - outbound message rendering
+  - channel authentication
+  - webhook health checks
+- Keep WhatsApp as the first production channel.
+- Add Telegram as the next easiest mobile channel.
+- Add Discord or Slack for team/workflow use.
+- Add a simple WebChat interface for local/private use.
+- Keep channel-specific capabilities outside the core agent loop.
+
+### Phase 8: Skills and plugins
+
+- Distinguish low-level tools from higher-level skills.
+- Define a local skill manifest format.
+- Add lifecycle commands:
+  - `safeclaw skill list`
+  - `safeclaw skill install`
+  - `safeclaw skill configure`
+  - `safeclaw skill run`
+  - `safeclaw skill update`
+- Require declared permissions for each skill.
+- Show permissions before install or enable.
+- Support local skills before adding any public registry.
+- Add example skills:
+  - web research
+  - daily brief
+  - coding helper
+  - family WhatsApp helper
+  - business inbox helper
+
+### Phase 9: Install and run
 
 - Add a clean install path:
   - `pip install -e .`
@@ -170,8 +284,11 @@ can actually trust running on your machine.
   - systemd service
   - Dockerfile
 - Support both local-only mode and WhatsApp mode.
+- Add daemon mode for persistent operation.
+- Add `safeclaw status`, `safeclaw reload`, and `safeclaw stop`.
+- Add scheduled tasks and recurring jobs after daemon mode exists.
 
-### Phase 7: Product polish
+### Phase 10: Product polish
 
 - Make the README simple and opinionated.
 - Add screenshots or terminal examples.
@@ -181,27 +298,40 @@ can actually trust running on your machine.
   - family WhatsApp helper
   - business inbox helper
 - Add clear warnings about what SafeClaw can and cannot do.
-
-### Phase 8: Open source trust
-
-- Add `SECURITY.md`.
-- Add `PRIVACY.md`.
-- Add a threat model explaining:
-  - what data stays local
-  - what goes to the LLM provider
-  - what Twilio can see
-  - what files the agent can touch
-- Keep defaults safe.
-- Make "no telemetry" explicit if that remains true.
+- Add a concise comparison page explaining why SafeClaw is intentionally smaller than larger agent platforms.
+- Keep defaults safe and boring.
 - Add signed releases later if the project grows.
+
+## Strategic product direction
+
+SafeClaw should not try to become a giant agent ecosystem first. The strongest
+path is:
+
+> OpenClaw-style usefulness, but smaller, auditable, and safe by construction.
+
+That means the next versions should prioritize trust primitives before breadth:
+
+1. Permission profiles.
+2. Structured audit logs.
+3. Twilio signature validation.
+4. Sender allowlist.
+5. `safeclaw doctor`.
+6. `safeclaw init`.
+7. Structured config.
+8. Tests for sessions, tools, and WhatsApp.
+9. Approval flow for risky tools.
+10. Better file editing/search tools.
+
+Only after that should SafeClaw expand into more channels, skills, browser
+automation, and persistent background operation.
 
 ## Immediate next steps
 
-1. Rename everything to SafeClaw.
-2. Add `.gitignore`.
+1. Add `.gitignore`.
+2. Add tests for sessions, tools, and WhatsApp.
 3. Add `safeclaw doctor`.
-4. Add Twilio webhook signature validation.
-5. Add sender allowlist.
-6. Add tests for sessions, tools, and WhatsApp.
-7. Add `safeclaw init` to generate `.env` and config.
-8. Add permission profiles so safety is built into the product, not just promised in the README.
+4. Add `safeclaw init` to generate `.env` and config.
+5. Add Twilio webhook signature validation.
+6. Add sender allowlist.
+7. Add permission profiles so safety is built into the product, not just promised in the README.
+8. Add structured audit logs for every tool call.

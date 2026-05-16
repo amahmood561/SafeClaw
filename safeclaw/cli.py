@@ -15,6 +15,13 @@ from .sessions import (
     session_status,
     update_session_settings,
 )
+from .service import (
+    install_macos_whatsapp_service,
+    macos_whatsapp_service_status,
+    start_macos_whatsapp_service,
+    stop_macos_whatsapp_service,
+    uninstall_macos_whatsapp_service,
+)
 from .tools import available_tools
 from .config import WORKSPACE
 from .whatsapp import serve_whatsapp, whatsapp_setup_status
@@ -135,6 +142,31 @@ def whatsapp(host: str = "0.0.0.0", port: int = 8080):
 def whatsapp_setup(public_url: str = "https://your-public-url"):
     """Show easy WhatsApp setup instructions and config status."""
     console.print(whatsapp_setup_status(public_url))
+
+@app.command("service-install")
+def service_install(host: str = "0.0.0.0", port: int = 8080, start: bool = True):
+    """Install the macOS LaunchAgent for persistent WhatsApp mode."""
+    console.print(install_macos_whatsapp_service(host=host, port=port, start=start))
+
+@app.command("service-start")
+def service_start():
+    """Start the persistent WhatsApp service."""
+    console.print(start_macos_whatsapp_service())
+
+@app.command("service-stop")
+def service_stop():
+    """Stop the persistent WhatsApp service."""
+    console.print(stop_macos_whatsapp_service())
+
+@app.command("service-status")
+def service_status():
+    """Show persistent WhatsApp service status."""
+    console.print(macos_whatsapp_service_status())
+
+@app.command("service-uninstall")
+def service_uninstall():
+    """Uninstall the persistent WhatsApp service."""
+    console.print(uninstall_macos_whatsapp_service())
 
 if __name__ == "__main__":
     app()

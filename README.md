@@ -208,6 +208,9 @@ safeclaw export --session default
 safeclaw import path/to/session-export.json --session restored
 safeclaw whatsapp-setup
 safeclaw whatsapp --port 8080
+safeclaw service-install
+safeclaw service-status
+safeclaw service-stop
 ```
 
 ## WhatsApp
@@ -258,6 +261,55 @@ WhatsApp commands:
 - `/permissions`
 - `/permissions readonly`
 - `/model gpt-4.1-mini`
+
+### Persistent WhatsApp mode on macOS
+
+If you want to walk away from your computer and keep receiving/replying through
+WhatsApp, install the SafeClaw WhatsApp service:
+
+```bash
+safeclaw service-install
+```
+
+This creates a macOS LaunchAgent that runs:
+
+```bash
+safeclaw whatsapp --host 0.0.0.0 --port 8080
+```
+
+The service starts at login and macOS will keep it alive while you are signed
+in. Your computer still needs to be awake and connected to the internet. If it
+sleeps, the webhook will not receive messages until it wakes again.
+
+Check status:
+
+```bash
+safeclaw service-status
+```
+
+Start or stop it:
+
+```bash
+safeclaw service-start
+safeclaw service-stop
+```
+
+Remove it:
+
+```bash
+safeclaw service-uninstall
+```
+
+Logs are written to:
+
+```text
+~/Library/Logs/SafeClaw/whatsapp.out.log
+~/Library/Logs/SafeClaw/whatsapp.err.log
+```
+
+For truly always-on access, run SafeClaw on a machine that stays awake, such as
+a Mac mini, home server, or VPS, and point your Twilio WhatsApp webhook at that
+machine through ngrok, Cloudflare Tunnel, or another stable public URL.
 
 Risky actions that require terminal approval are blocked over WhatsApp instead
 of hanging. For a personal always-available WhatsApp assistant, keep the profile

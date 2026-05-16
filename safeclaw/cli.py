@@ -1,7 +1,9 @@
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 from .agent import run_task
+from .doctor import doctor_summary, run_doctor
 from .sessions import (
     compact_session,
     edit_memory,
@@ -75,6 +77,30 @@ def chat(session: str = "default", model: str = "", permission_profile: str = ""
 def tools():
     """Show available tools."""
     console.print(available_tools())
+
+@app.command("doctor")
+def doctor(port: int = 8080, strict: bool = False):
+    """Check local setup, config, WhatsApp, and service readiness."""
+    checks = run_doctor(port=port)
+    table = Table(title="SafeClaw Doctor")
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+    table.add_column("Fix")
+    colors = {"ok": "green", "warn": "yellow", "fail": "red"}
+    labels = {"ok": "OK", "warn": "WARN", "fail": "FAIL"}
+    for check in checks:
+        table.add_row(
+            check.name,
+            f"[{colors[check.status]}]{labels[check.status]}[/{colors[check.status]}]",
+            check.detail,
+            check.fix,
+        )
+    console.print(table)
+    summary = doctor_summary(checks)
+    console.print(f"Summary: {summary}")
+    if strict and any(check.status == "fail" for check in checks):
+        raise typer.Exit(1)
 
 @app.command("sessions")
 def show_sessions():

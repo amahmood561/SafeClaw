@@ -123,6 +123,7 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 - `safeclaw run`
 - `safeclaw chat`
 - `safeclaw tools`
+- `safeclaw doctor`
 - `safeclaw sessions`
 - `safeclaw status`
 - `safeclaw session-config`
@@ -317,12 +318,25 @@ pip install -e .
 safeclaw run "summarize what files are in this folder"
 ```
 
+Check your local setup:
+
+```bash
+safeclaw doctor
+```
+
+`safeclaw doctor` checks Python, `.env`, API key, model settings, workspace
+permissions, permission profile, approval mode, shell status, Twilio config,
+WhatsApp sender allowlist, webhook port availability, and macOS service status.
+Use `safeclaw doctor --strict` if you want failures to exit with a non-zero
+status for scripts.
+
 ## Commands
 
 ```bash
 safeclaw run "your task here" --session default
 safeclaw chat --session default
 safeclaw tools
+safeclaw doctor
 safeclaw sessions
 safeclaw status --session default
 safeclaw session-config --session default --model gpt-4.1-mini --permission-profile readonly

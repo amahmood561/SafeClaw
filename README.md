@@ -29,6 +29,7 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 
 - Fast installer with `install.sh`.
 - Guided non-developer installer with `guided-install.sh`.
+- Double-click macOS setup wizard in `mac-setup/`.
 - Optional user-level `safeclaw` launcher for on-demand use from any terminal.
 - Manual Python setup.
 - Editable CLI install.
@@ -173,7 +174,52 @@ For a friendlier step-by-step installer that asks for your settings:
 bash <(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)
 ```
 
+On macOS, there is also a double-click setup wizard:
+
+```text
+mac-setup/SafeClaw Setup.command
+```
+
 ## Setup
+
+### Mac double-click setup
+
+For Mac users who do not want to use Terminal prompts, use the setup wizard in
+the `mac-setup` folder.
+
+1. Open the `mac-setup` folder.
+2. Double-click `SafeClaw Setup.command`.
+3. Follow the macOS dialog prompts.
+4. Keep the Terminal window open while installation runs.
+
+If macOS blocks it, right-click `SafeClaw Setup.command`, choose **Open**, then
+confirm.
+
+The Mac setup wizard asks for:
+
+- Install folder.
+- Git repo and branch.
+- Whether to install a global `safeclaw` command.
+- OpenAI API key.
+- OpenAI-compatible base URL.
+- Model name.
+- Workspace path.
+- Permission profile.
+- Approval mode.
+- Whether shell commands should be allowed.
+- Optional guided Twilio WhatsApp setup.
+- Optional persistent WhatsApp service setup.
+
+If you choose WhatsApp setup, the wizard walks you through Twilio Sandbox or
+Sender setup, explains how to expose SafeClaw with ngrok or Cloudflare Tunnel,
+builds the exact webhook URL ending in `/whatsapp`, can copy that URL to your
+clipboard, and asks for the Twilio credentials and allowed WhatsApp senders.
+
+The wizard writes logs to:
+
+```text
+~/Library/Logs/SafeClaw/mac-setup.log
+```
 
 ### One-line setup
 
@@ -441,6 +487,7 @@ root.
 | `README.md` | Main project documentation. | Install instructions, setup flow, commands, WhatsApp setup, safety model, roadmap, and feature overview. |
 | `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, optionally creates a global launcher, copies `.env.example`, and runs `safeclaw tools`. |
 | `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, optional global command setup, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
+| `mac-setup/` | Double-click macOS setup wizard. | Uses macOS dialogs to collect setup choices, installs SafeClaw, writes `.env`, runs diagnostics, and can configure persistent WhatsApp service mode. |
 | `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, Twilio, and allowed WhatsApp senders. |
 | `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
 | `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |

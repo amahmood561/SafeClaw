@@ -29,6 +29,7 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 
 - Fast installer with `install.sh`.
 - Guided non-developer installer with `guided-install.sh`.
+- Optional user-level `safeclaw` launcher for on-demand use from any terminal.
 - Manual Python setup.
 - Editable CLI install.
 - `.env.example` config template.
@@ -191,10 +192,26 @@ The script will:
 - Copy `.env.example` to `.env` if `.env` does not exist.
 - Run `safeclaw tools` as a local smoke check.
 
+Install a global `safeclaw` launcher too:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_GLOBAL=true bash
+```
+
+When `SAFECLAW_GLOBAL=true` is set, the installer creates
+`~/.local/bin/safeclaw` and adds `~/.local/bin` to your shell startup file if it
+is not already on `PATH`.
+
 Install to a custom directory:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_DIR="$HOME/apps/safeclaw" bash
+```
+
+Install the global launcher somewhere else:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | SAFECLAW_GLOBAL=true SAFECLAW_BIN_DIR="$HOME/bin" bash
 ```
 
 Install from a different repo or branch:
@@ -212,11 +229,25 @@ curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.s
 After install:
 
 ```bash
-cd ~/safeclaw
-source .venv/bin/activate
+safeclaw doctor
+safeclaw run "make me a todo list app plan"
 ```
 
-Edit `.env` and set `OPENAI_API_KEY`.
+Without `SAFECLAW_GLOBAL=true`, use the venv command directly:
+
+```bash
+~/safeclaw/.venv/bin/safeclaw doctor
+```
+
+If you installed globally and your current terminal cannot find `safeclaw` yet,
+run:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+New terminal windows should pick this up automatically. Edit `~/safeclaw/.env`
+and set `OPENAI_API_KEY`.
 
 ### Guided setup for non-developers
 
@@ -233,6 +264,9 @@ as it goes and keeps safer defaults enabled.
 The guided installer asks for:
 
 - Install folder.
+- Whether to install a global `safeclaw` command.
+- Command install folder, if global install is enabled. The default is `~/.local/bin`.
+- Whether to add that command folder to your shell startup file, if global install is enabled.
 - Git repo and branch.
 - OpenAI API key. This can be left blank and added later.
 - OpenAI-compatible base URL. The default is `https://api.openai.com/v1`.
@@ -251,6 +285,8 @@ The guided installer does this for you:
 - Upgrades `pip`.
 - Installs Python dependencies from `requirements.txt`.
 - Installs the `safeclaw` CLI in editable mode.
+- Optionally creates a launcher so `safeclaw` works from any terminal.
+- Optionally adds the launcher folder to your shell startup file if you approve it.
 - Backs up an existing `.env` if one already exists.
 - Writes a new `.env` with your answers.
 - Sets `.env` permissions to owner-read/write only.
@@ -275,8 +311,12 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 After guided setup, start using SafeClaw:
 
 ```bash
-cd ~/safeclaw
-source .venv/bin/activate
+~/safeclaw/.venv/bin/safeclaw run "make me a todo list app plan"
+```
+
+If you chose global command install during guided setup, you can use:
+
+```bash
 safeclaw run "make me a todo list app plan"
 ```
 
@@ -399,8 +439,8 @@ root.
 | Path | What it is | Features it supports |
 | --- | --- | --- |
 | `README.md` | Main project documentation. | Install instructions, setup flow, commands, WhatsApp setup, safety model, roadmap, and feature overview. |
-| `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, copies `.env.example`, and runs `safeclaw tools`. |
-| `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
+| `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, optionally creates a global launcher, copies `.env.example`, and runs `safeclaw tools`. |
+| `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, optional global command setup, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
 | `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, Twilio, and allowed WhatsApp senders. |
 | `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
 | `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |

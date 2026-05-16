@@ -10,6 +10,7 @@ WORKSPACE_DEFAULT="./workspace"
 PERMISSION_PROFILE_DEFAULT="readonly"
 APPROVAL_MODE_DEFAULT="ask"
 MAX_TOOL_STEPS_DEFAULT="6"
+BIN_DIR_DEFAULT="$HOME/.local/bin"
 
 if [ -r /dev/tty ]; then
   exec 3</dev/tty
@@ -34,6 +35,44 @@ fail() {
 
 need_command() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
+}
+
+shell_rc_file() {
+  case "${SHELL:-}" in
+    */zsh) printf "%s" "$HOME/.zshrc" ;;
+    */bash) printf "%s" "$HOME/.bashrc" ;;
+    *) printf "%s" "$HOME/.profile" ;;
+  esac
+}
+
+install_launcher() {
+  local install_dir="$1"
+  local bin_dir="$2"
+  local update_shell_rc="$3"
+  local launcher="$bin_dir/safeclaw"
+  mkdir -p "$bin_dir"
+  cat > "$launcher" <<EOF
+#!/usr/bin/env bash
+exec "$install_dir/.venv/bin/safeclaw" "\$@"
+EOF
+  chmod +x "$launcher"
+
+  case ":$PATH:" in
+    *":$bin_dir:"*) ;;
+    *)
+      if [ "$update_shell_rc" = "true" ]; then
+        local rc_file
+        rc_file="$(shell_rc_file)"
+        touch "$rc_file"
+        if ! grep -Fq "$bin_dir" "$rc_file"; then
+          {
+            printf "\n# SafeClaw CLI\n"
+            printf 'export PATH="%s:$PATH"\n' "$bin_dir"
+          } >> "$rc_file"
+        fi
+      fi
+      ;;
+  esac
 }
 
 prompt() {
@@ -138,6 +177,19 @@ need_command python3
 repo_url="$(prompt "Git repo URL" "$REPO_URL_DEFAULT")"
 install_dir="$(prompt "Install folder" "$INSTALL_DIR_DEFAULT")"
 ref="$(prompt "Branch or tag" "$REF_DEFAULT")"
+if prompt_yes_no "Install safeclaw command globally for any terminal" "n"; then
+  global_install="true"
+  bin_dir="$(prompt "Command install folder" "$BIN_DIR_DEFAULT")"
+  if prompt_yes_no "Add command folder to shell startup file if needed" "y"; then
+    update_shell_rc="true"
+  else
+    update_shell_rc="false"
+  fi
+else
+  global_install="false"
+  bin_dir="$BIN_DIR_DEFAULT"
+  update_shell_rc="false"
+fi
 
 cat <<'EOF'
 
@@ -215,6 +267,11 @@ info "Installing Python dependencies"
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pip install -e .
 
+if [ "$global_install" = "true" ]; then
+  info "Installing global safeclaw launcher"
+  install_launcher "$install_dir" "$bin_dir" "$update_shell_rc"
+fi
+
 if [ -f .env ]; then
   backup=".env.backup.$(date +%Y%m%d-%H%M%S)"
   info "Backing up existing .env to $backup"
@@ -252,9 +309,18 @@ Config file:
   $install_dir/.env
 
 To use it:
-  cd "$install_dir"
-  source .venv/bin/activate
+  "$install_dir/.venv/bin/safeclaw" run "make me a todo list app plan"
+
+To invoke safeclaw from any terminal, rerun the guided installer and choose:
+  Install safeclaw command globally for any terminal: yes
+
+Then use:
   safeclaw run "make me a todo list app plan"
+
+If your current terminal cannot find safeclaw yet, run:
+  export PATH="$bin_dir:\$PATH"
+
+New terminal windows should pick this up automatically.
 
 To start chat mode:
   safeclaw chat

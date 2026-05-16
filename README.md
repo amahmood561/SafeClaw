@@ -14,6 +14,134 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 - Has a simple tool system you can extend
 - Keeps task logs locally
 
+## Feature list
+
+### Core assistant
+
+- Terminal one-shot tasks with `safeclaw run`.
+- Interactive chat with `safeclaw chat`.
+- OpenAI-compatible LLM support.
+- Per-session conversation history.
+- Local task logs.
+- Automatic long-session compaction.
+
+### Install and setup
+
+- Fast installer with `install.sh`.
+- Guided non-developer installer with `guided-install.sh`.
+- Manual Python setup.
+- Editable CLI install.
+- `.env.example` config template.
+
+### WhatsApp
+
+- Twilio WhatsApp webhook.
+- `safeclaw whatsapp`.
+- `safeclaw whatsapp-setup`.
+- Persistent WhatsApp sessions per sender.
+- Sender allowlist with `SAFECLAW_ALLOWED_SENDERS`.
+- WhatsApp commands:
+  - `/help`
+  - `/status`
+  - `/memory`
+  - `/reset`
+  - `/permissions`
+  - `/permissions readonly`
+  - `/model gpt-4.1-mini`
+
+### Persistent background mode
+
+- macOS LaunchAgent service.
+- `safeclaw service-install`.
+- `safeclaw service-start`.
+- `safeclaw service-stop`.
+- `safeclaw service-status`.
+- `safeclaw service-uninstall`.
+- Logs written to `~/Library/Logs/SafeClaw/`.
+
+### File and workspace tools
+
+- `list_files`.
+- `read_file`.
+- `write_file`.
+- `search_files`.
+- `edit_file`.
+- `apply_patch`.
+- Workspace-only file access.
+- Path traversal protection.
+- File backups before writes, edits, and patches.
+- Large file and output trimming.
+
+### Web and network tools
+
+- `fetch_url`.
+- `web_search`.
+- Network tools gated by permission profile.
+
+### Memory and sessions
+
+- Durable session memory.
+- `remember`.
+- `recall_memory`.
+- `search_memory`.
+- `forget`.
+- CLI memory commands:
+  - `safeclaw memory`
+  - `safeclaw memory-search`
+  - `safeclaw memory-forget`
+  - `safeclaw memory-edit`
+- `safeclaw status`.
+- `safeclaw session-config`.
+- `safeclaw export`.
+- `safeclaw import`.
+
+### Safety and permissions
+
+- Enforced permission profiles:
+  - `readonly`
+  - `workspace-write`
+  - `network-allow`
+  - `shell-ask`
+  - `shell-allow`
+  - `messaging-allow`
+- Approval modes:
+  - `ask`
+  - `deny`
+  - `auto`
+- Approval prompts for risky actions:
+  - file writes
+  - file edits
+  - patches
+  - network fetch/search
+  - shell commands
+  - outbound WhatsApp sends
+- Shell disabled by default with `ALLOW_SHELL=false`.
+- WhatsApp blocks approval-required actions instead of hanging.
+
+### CLI commands
+
+- `safeclaw run`
+- `safeclaw chat`
+- `safeclaw tools`
+- `safeclaw sessions`
+- `safeclaw status`
+- `safeclaw session-config`
+- `safeclaw memory`
+- `safeclaw memory-search`
+- `safeclaw memory-forget`
+- `safeclaw memory-edit`
+- `safeclaw reset`
+- `safeclaw compact`
+- `safeclaw export`
+- `safeclaw import`
+- `safeclaw whatsapp`
+- `safeclaw whatsapp-setup`
+- `safeclaw service-install`
+- `safeclaw service-start`
+- `safeclaw service-stop`
+- `safeclaw service-status`
+- `safeclaw service-uninstall`
+
 ## Quick install
 
 Install SafeClaw into `~/safeclaw`, create a virtual environment, install the

@@ -520,6 +520,71 @@ They are local state, not product source code.
 - Export and import sessions with memory.
 - Auto-compact long sessions.
 
+### Memory handler implementation
+
+SafeClaw memory is implemented in `safeclaw/sessions.py`. It is deliberately
+plain, local, and inspectable.
+
+How memory is stored:
+
+- Memory lives inside the configured `WORKSPACE`.
+- The default memory folder is `.safeclaw_memory/`.
+- Each session gets its own JSON file:
+  - `default` uses `.safeclaw_memory/default.json`
+  - WhatsApp senders use session IDs derived from their sender address
+- Each memory item is stored as a JSON object with:
+  - `id`
+  - `created_at`
+  - `updated_at`
+  - `note`
+
+The current memory shape looks like this:
+
+```json
+[
+  {
+    "id": 1,
+    "created_at": "2026-05-16T10:30:00",
+    "updated_at": null,
+    "note": "User prefers readonly mode by default."
+  }
+]
+```
+
+Memory operations:
+
+- `remember(session_id, note)` trims and saves a durable note.
+- `recall(session_id)` formats all saved notes for display or agent context.
+- `list_memory(session_id)` returns structured memory entries.
+- `search_memory(session_id, query)` performs case-insensitive local search.
+- `edit_memory(session_id, memory_id, note)` updates one memory item.
+- `forget_memory(session_id, target)` deletes by ID or matching text.
+- `reset_session(session_id)` removes both session history and memory.
+- `export_session(session_id)` includes memory in the export bundle.
+- `import_session(path, session_id)` restores memory if the export includes it.
+
+Legacy memory migration:
+
+- Older `.md` memory files are still recognized.
+- If `.safeclaw_memory/<session>.md` exists and no JSON memory file exists,
+  SafeClaw reads the markdown lines and writes a JSON memory file.
+- Once JSON memory exists, JSON takes precedence.
+
+What memory does not do:
+
+- No remote memory database.
+- No cloud sync.
+- No telemetry.
+- No hidden callbacks.
+- No external memory hooks.
+- No webhook-based memory writes.
+- No non-English or Chinese-language prompt hooks.
+- No third-party storage unless you manually place the workspace in synced
+  storage such as iCloud, Dropbox, or Google Drive.
+
+The memory handler is intentionally boring: local files, explicit session IDs,
+and simple JSON that users can inspect or delete.
+
 **Safety model**
 
 - Enforced permission profiles:

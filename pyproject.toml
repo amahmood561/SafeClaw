@@ -10,8 +10,29 @@ dependencies = [
   "typer>=0.12.5"
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "pytest-cov>=5.0.0"
+]
+
 [project.scripts]
 safeclaw = "safeclaw.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["safeclaw*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "live: tests that run without mocks and may depend on local config or services"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["safeclaw"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

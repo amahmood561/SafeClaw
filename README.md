@@ -32,6 +32,8 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 - Manual Python setup.
 - Editable CLI install.
 - `.env.example` config template.
+- Pytest test framework with coverage.
+- Mocked default tests plus opt-in live/unmocked tests.
 
 ### WhatsApp
 
@@ -329,6 +331,37 @@ permissions, permission profile, approval mode, shell status, Twilio config,
 WhatsApp sender allowlist, webhook port availability, and macOS service status.
 Use `safeclaw doctor --strict` if you want failures to exit with a non-zero
 status for scripts.
+
+## Testing
+
+Install test dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run the default mocked test suite:
+
+```bash
+pytest
+```
+
+Run tests with coverage:
+
+```bash
+pytest --cov=safeclaw --cov-report=term-missing
+```
+
+Run opt-in live/unmocked checks:
+
+```bash
+pytest --run-live
+```
+
+By default, tests marked `live` are skipped. Live tests run selected commands
+without mocks, so they may depend on local config, services, or ports. The
+regular test suite mocks command side effects such as LLM calls, WhatsApp
+servers, and macOS service operations.
 
 ## Commands
 

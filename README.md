@@ -213,6 +213,120 @@ safeclaw service-status
 safeclaw service-stop
 ```
 
+## Project structure and feature map
+
+SafeClaw is intentionally small. Most of the product lives in the `safeclaw/`
+Python package, while install scripts and project metadata live at the repo
+root.
+
+### Repo root
+
+| Path | What it is | Features it supports |
+| --- | --- | --- |
+| `README.md` | Main project documentation. | Install instructions, setup flow, commands, WhatsApp setup, safety model, roadmap, and feature overview. |
+| `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, copies `.env.example`, and runs `safeclaw tools`. |
+| `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
+| `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, Twilio, and allowed WhatsApp senders. |
+| `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
+| `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |
+| `workspace/` | Local working area created at runtime. | Stores files SafeClaw can touch, plus local sessions, memories, logs, backups, and exports. |
+
+### `safeclaw/` package
+
+| Path | What it is | Features it supports |
+| --- | --- | --- |
+| `safeclaw/__init__.py` | Package marker. | Lets Python import SafeClaw as a package. |
+| `safeclaw/config.py` | Environment/config loader. | Loads API settings, model name, workspace path, shell flag, permission profile, approval mode, Twilio credentials, and WhatsApp sender allowlist. |
+| `safeclaw/cli.py` | Typer command-line interface. | Powers `safeclaw run`, `chat`, `tools`, sessions, memory commands, export/import, WhatsApp setup, and persistent service commands. |
+| `safeclaw/agent.py` | Main agent loop. | Builds task context, sends messages to the LLM, handles structured tool calls, saves logs, remembers session state, and auto-compacts long sessions. |
+| `safeclaw/llm.py` | OpenAI-compatible LLM client. | Sends chat-completion requests to `OPENAI_BASE_URL`, supports structured tool calls, and validates missing API keys. |
+| `safeclaw/tools.py` | Local tool system and safety gate. | Provides file tools, search/edit/patch tools, URL/web tools, shell, WhatsApp sending, workspace path protection, permission profiles, and approval prompts. |
+| `safeclaw/sessions.py` | Session and memory storage. | Saves conversations, JSON-backed memories, memory search/edit/forget, session status, compaction, export/import, and per-session model/permission settings. |
+| `safeclaw/whatsapp.py` | Twilio WhatsApp webhook. | Receives WhatsApp messages, maps senders to sessions, supports `/help`, `/status`, `/memory`, `/reset`, `/permissions`, `/model`, and sender allowlist checks. |
+| `safeclaw/service.py` | Persistent macOS service helper. | Installs, starts, stops, checks, and uninstalls a LaunchAgent that keeps the WhatsApp webhook running after login. |
+
+### Runtime workspace folders
+
+These folders are created inside `WORKSPACE`, which defaults to `./workspace`.
+They are local state, not product source code.
+
+| Path | What it stores |
+| --- | --- |
+| `.safeclaw_sessions/` | Per-session conversation JSON files. |
+| `.safeclaw_memory/` | Durable memory notes for each session. |
+| `.safeclaw_logs/` | Markdown task logs with task/result summaries. |
+| `.safeclaw_backups/` | Backups created before file writes, edits, and patches. |
+| `.safeclaw_exports/` | Exported session and memory bundles. |
+
+### Main features by area
+
+**Terminal assistant**
+
+- `safeclaw run "task"` for one-shot tasks.
+- `safeclaw chat` for an interactive local chat loop.
+- Session-specific model and permission settings.
+- Local task logs written under the workspace.
+
+**WhatsApp assistant**
+
+- Twilio-compatible `/whatsapp` webhook.
+- Persistent session per WhatsApp sender.
+- Sender allowlist with `SAFECLAW_ALLOWED_SENDERS`.
+- Built-in WhatsApp commands for help, status, memory, reset, permissions, and model selection.
+- Non-interactive safety behavior: actions that require terminal approval are blocked instead of hanging.
+
+**Persistent background mode**
+
+- `safeclaw service-install` installs a macOS LaunchAgent.
+- `safeclaw service-status` shows whether the WhatsApp service is installed and loaded.
+- `safeclaw service-start`, `service-stop`, and `service-uninstall` manage the service.
+- Logs are written to `~/Library/Logs/SafeClaw/`.
+
+**File and workspace tools**
+
+- List and read files inside the configured workspace.
+- Write files with backup support.
+- Search file names and file contents.
+- Edit files by replacing text.
+- Apply patches with backups.
+- Prevent path traversal outside the workspace.
+
+**Web and network tools**
+
+- `fetch_url` retrieves a URL and trims large responses.
+- `web_search` performs basic web search.
+- Network tools require the `network-allow` profile.
+
+**Memory and sessions**
+
+- Save durable memory notes with `remember`.
+- Recall, search, edit, and forget memories.
+- Show session status.
+- Export and import sessions with memory.
+- Auto-compact long sessions.
+
+**Safety model**
+
+- Enforced permission profiles:
+  - `readonly`
+  - `workspace-write`
+  - `network-allow`
+  - `shell-ask`
+  - `shell-allow`
+  - `messaging-allow`
+- Approval modes:
+  - `ask`
+  - `deny`
+  - `auto`
+- Risky actions can require approval:
+  - file writes
+  - file edits
+  - patches
+  - network fetch/search
+  - shell commands
+  - outbound WhatsApp sends
+- Shell still requires `ALLOW_SHELL=true`, even with a shell permission profile.
+
 ## WhatsApp
 
 This starter supports a Twilio WhatsApp webhook.

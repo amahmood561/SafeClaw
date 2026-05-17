@@ -892,7 +892,7 @@ should borrow the parts that help a small agent become trustworthy and useful.
 | Config | `.env` only | YAML/TOML config for agents, models, channels, and permissions | `safeclaw.toml`, profiles, config validation |
 | Operations | Manual run | Onboarding, install scripts, daemon, reload, status | `init`, `doctor`, service install, health/status commands |
 | Observability | Local markdown task logs | Audit logging, usage tracking, monitoring hooks | Structured logs, token/cost tracking, tool history commands |
-| Multi-agent | None | Multiple named agents with roles and permissions | Agent definitions, role-specific prompts, per-agent model/permission config |
+| Multi-agent | Single agent loop only | Multiple named agents with roles and permissions | Safe sub-agent orchestration, bounded worker agents, verifier agents, per-agent model/permission config |
 | Files and coding | read/write/list/shell | Broader file operations, code execution, scripts, integrations | patch/edit/search tools, git/GitHub integration |
 
 ### Phase 1: Foundation and reliability
@@ -1008,7 +1008,49 @@ Memory and sessions:
 - Add daily and monthly budget limits.
 - Add `safeclaw models` and `safeclaw usage` commands.
 
-### Phase 7: Channels and adapters
+### Phase 7: Safe sub-agent orchestration
+
+SafeClaw can handle tasks today through one main agent loop. It can call tools,
+save sessions, use memory, and respect permission profiles. It does not yet
+automatically split work across multiple sub-agents.
+
+Planned sub-agent support should stay aligned with SafeClaw's safety model:
+
+- Add an optional `--agents auto` mode for larger tasks.
+- Keep the main agent responsible for planning, final answers, and risky
+  approvals.
+- Add read-only explorer agents for codebase or workspace inspection.
+- Add bounded worker agents for file edits inside the configured workspace.
+- Add verifier agents for tests, `safeclaw doctor`, and setup checks.
+- Add optional messenger agents for WhatsApp updates after long tasks finish.
+- Give each sub-agent its own permission profile instead of inheriting broad
+  access from the main session.
+- Store sub-agent actions in the session log so users can see what each agent
+  read, changed, ran, or blocked.
+- Make sub-agent spawning explicit by default, then experiment with automatic
+  task splitting after the audit trail is strong.
+
+Example target flow:
+
+```bash
+safeclaw run "build the installer docs and run tests" --agents auto
+```
+
+Target role model:
+
+| Role | Default permission profile | Responsibility |
+| --- | --- | --- |
+| Main agent | Current session profile | Plan, coordinate, approve risky actions, produce final answer |
+| Explorer | `readonly` | Inspect files, summarize structure, identify relevant code |
+| Worker | `workspace-write` | Make bounded file changes inside the workspace |
+| Verifier | `shell-ask` | Run tests and checks only after approval |
+| Messenger | `messaging-allow` | Send completion updates only when explicitly enabled |
+
+The goal is not to make SafeClaw feel like a swarm. The goal is to make bigger
+tasks easier to manage while keeping each worker narrow, inspectable, and
+permissioned.
+
+### Phase 8: Channels and adapters
 
 - Introduce a channel adapter interface for:
   - inbound message normalization
@@ -1021,7 +1063,7 @@ Memory and sessions:
 - Add a simple WebChat interface for local/private use.
 - Keep channel-specific capabilities outside the core agent loop.
 
-### Phase 8: Skills and plugins
+### Phase 9: Skills and plugins
 
 - Distinguish low-level tools from higher-level skills.
 - Define a local skill manifest format.
@@ -1041,7 +1083,7 @@ Memory and sessions:
   - family WhatsApp helper
   - business inbox helper
 
-### Phase 9: Install and run
+### Phase 10: Install and run
 
 - Add a clean install path:
   - `pip install -e .`
@@ -1057,7 +1099,7 @@ Memory and sessions:
 - Add `safeclaw status`, `safeclaw reload`, and `safeclaw stop`.
 - Add scheduled tasks and recurring jobs after daemon mode exists.
 
-### Phase 10: Product polish
+### Phase 11: Product polish
 
 - Make the README simple and opinionated.
 - Add screenshots or terminal examples.

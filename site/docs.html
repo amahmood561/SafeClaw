@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw Documentation</title>
+    <meta name="description" content="SafeClaw documentation for CLI usage, permissions, memory, sessions, WhatsApp, service mode, and project structure.">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="install.html">Install</a>
+          <a class="active" href="docs.html">Docs</a>
+          <a href="api.html">API</a>
+          <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="install.html">Install</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="doc-layout">
+      <aside class="sidebar" aria-label="Documentation sections">
+        <a class="active" href="#overview">Overview</a>
+        <a href="#commands">Commands</a>
+        <a href="#permissions">Permissions</a>
+        <a href="#memory">Memory</a>
+        <a href="#whatsapp">WhatsApp</a>
+        <a href="#structure">Project structure</a>
+      </aside>
+      <article class="doc-main">
+        <p class="section-kicker">Documentation</p>
+        <h1>SafeClaw is small on purpose: every capability should be visible.</h1>
+        <p>SafeClaw runs as a local CLI assistant and optional WhatsApp webhook. It talks to OpenAI-compatible model providers, stores sessions locally, and routes tool calls through explicit permission checks.</p>
+
+        <h2 id="overview">Overview</h2>
+        <p>The assistant loop accepts a task, sends the conversation and available tools to the configured model, executes approved tool calls, appends results to the session, and returns a final answer. Tool behavior is constrained by the active permission profile and approval mode.</p>
+        <pre class="code-block"><code>safeclaw run "inspect my workspace and summarize the README"
+safeclaw chat --session personal
+safeclaw doctor --strict</code></pre>
+
+        <h2 id="commands">CLI commands</h2>
+        <table class="matrix">
+          <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>run</code></td><td>Run one task in a named session.</td></tr>
+            <tr><td><code>chat</code></td><td>Start an interactive task loop.</td></tr>
+            <tr><td><code>tools</code></td><td>List available tool capabilities.</td></tr>
+            <tr><td><code>doctor</code></td><td>Check local setup, config, WhatsApp, and service readiness.</td></tr>
+            <tr><td><code>sessions</code></td><td>List saved sessions.</td></tr>
+            <tr><td><code>status</code></td><td>Show session status.</td></tr>
+            <tr><td><code>session-config</code></td><td>Set per-session model and permission profile metadata.</td></tr>
+            <tr><td><code>memory</code></td><td>Show saved memory for a session.</td></tr>
+            <tr><td><code>memory-search</code></td><td>Search local memory notes.</td></tr>
+            <tr><td><code>memory-edit</code></td><td>Edit a memory note by ID.</td></tr>
+            <tr><td><code>memory-forget</code></td><td>Delete memory by ID or matching text.</td></tr>
+            <tr><td><code>export</code></td><td>Export a session and its memory.</td></tr>
+            <tr><td><code>import</code></td><td>Import a session export.</td></tr>
+            <tr><td><code>whatsapp</code></td><td>Run the Twilio-compatible WhatsApp webhook.</td></tr>
+            <tr><td><code>service-*</code></td><td>Install, start, stop, inspect, or uninstall the macOS background service.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="permissions">Permissions</h2>
+        <p>Set the default profile in <code>.env</code> with <code>SAFECLAW_PERMISSION_PROFILE</code>. Override it per command with <code>--permission-profile</code> or per session with <code>session-config</code>.</p>
+        <pre class="code-block"><code>SAFECLAW_PERMISSION_PROFILE=readonly
+SAFECLAW_APPROVAL_MODE=ask
+ALLOW_SHELL=false
+
+safeclaw run "search for TODOs" --permission-profile readonly
+safeclaw session-config personal --permission-profile workspace-write</code></pre>
+        <p>Approval modes are <code>ask</code>, <code>deny</code>, and <code>auto</code>. WhatsApp and other non-interactive contexts block approval-required actions instead of waiting forever for terminal input.</p>
+
+        <h2 id="memory">Memory and sessions</h2>
+        <p>Session history and memory are local files. Memory supports create, list, search, edit, delete, export, import, and automatic session compaction for long-running conversations.</p>
+        <pre class="code-block"><code>safeclaw memory --session default
+safeclaw memory-search "whatsapp" --session default
+safeclaw memory-edit 2 "Use readonly by default"
+safeclaw memory-forget 2
+safeclaw export --session default --output safeclaw-session.json</code></pre>
+
+        <h2 id="whatsapp">WhatsApp</h2>
+        <p>WhatsApp support is designed for remote access with deliberate boundaries. Configure Twilio credentials, allowed senders, and the public webhook URL ending in <code>/whatsapp</code>. Use service mode when you want SafeClaw to stay reachable while you walk away from the computer.</p>
+        <pre class="code-block"><code>TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+SAFECLAW_ALLOWED_SENDERS=whatsapp:+15551234567
+
+safeclaw whatsapp --port 8080</code></pre>
+
+        <h2 id="structure">Project structure</h2>
+        <table class="matrix">
+          <thead><tr><th>Path</th><th>Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td><code>safeclaw/cli.py</code></td><td>Typer command definitions and terminal UX.</td></tr>
+            <tr><td><code>safeclaw/agent.py</code></td><td>Agent loop, tool-call execution, and session integration.</td></tr>
+            <tr><td><code>safeclaw/tools.py</code></td><td>Workspace tools, permission gates, approvals, backups, shell, network, and messaging tools.</td></tr>
+            <tr><td><code>safeclaw/sessions.py</code></td><td>Local session history, memory handler, compaction, export, and import.</td></tr>
+            <tr><td><code>safeclaw/whatsapp.py</code></td><td>Twilio webhook, allowlist checks, WhatsApp commands, and remote task handling.</td></tr>
+            <tr><td><code>safeclaw/doctor.py</code></td><td>Setup diagnostics and actionable fixes.</td></tr>
+            <tr><td><code>install.sh</code></td><td>Fast installer with opt-in global launcher.</td></tr>
+            <tr><td><code>guided-install.sh</code></td><td>Step-by-step terminal installer for non-devs.</td></tr>
+            <tr><td><code>mac-setup/</code></td><td>Double-click macOS installer and WhatsApp walkthrough.</td></tr>
+            <tr><td><code>tests/</code></td><td>Mocked tests, installer checks, memory tests, and opt-in live tests.</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div><strong>SafeClaw</strong><p>Documentation for local-first, permissioned automation.</p></div>
+        <div><a href="install.html">Install</a> &nbsp; <a href="api.html">API</a> &nbsp; <a href="roadmap.html">Roadmap</a></div>
+      </div>
+    </footer>
+  </body>
+</html>

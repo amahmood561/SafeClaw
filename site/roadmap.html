@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw Roadmap</title>
+    <meta name="description" content="SafeClaw roadmap for safer local automation, installer polish, WhatsApp persistence, Ollama support, docs, packaging, and contributor workflows.">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="install.html">Install</a>
+          <a href="docs.html">Docs</a>
+          <a href="api.html">API</a>
+          <a class="active" href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="docs.html">Read docs</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Roadmap</p>
+            <h1>Make local automation trustworthy enough to leave running.</h1>
+          </div>
+          <p class="section-summary">SafeClaw’s roadmap is organized around install confidence, permission clarity, local model support, remote access, and contributor ergonomics.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card">
+            <span class="tag">Today</span>
+            <h3>Installer polish</h3>
+            <p>Keep improving Mac setup, guided install, global command opt-in, doctor output, and first-run troubleshooting.</p>
+          </article>
+          <article class="card">
+            <span class="tag">Next</span>
+            <h3>Ollama flow</h3>
+            <p>Add first-class local model setup: detect Ollama, offer model downloads, and write provider config without hand-editing env files.</p>
+          </article>
+          <article class="card">
+            <span class="tag">Safety</span>
+            <h3>Approval UX</h3>
+            <p>Improve the approval path for terminal, chat, and WhatsApp so risky actions stay visible without becoming exhausting.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="section">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Open questions</p>
+              <h2>Where contributors can have real impact.</h2>
+            </div>
+            <p class="section-summary">The project is early enough that good feedback can still shape the safety model and product direction.</p>
+          </div>
+          <div class="split">
+            <div class="steps">
+              <div class="step"><span class="step-number">1</span><div><h3>Permission profiles</h3><p>Should SafeClaw use static profiles, per-tool approvals, per-session policy, or object-capability style grants?</p></div></div>
+              <div class="step"><span class="step-number">2</span><div><h3>Remote approvals</h3><p>How should WhatsApp safely approve, deny, or queue actions when the user is away from the terminal?</p></div></div>
+              <div class="step"><span class="step-number">3</span><div><h3>Memory controls</h3><p>What should users be able to inspect, redact, forget, export, and pin before long-running use feels comfortable?</p></div></div>
+            </div>
+            <div class="code-block"><code>Current focus
+
+- safer defaults
+- better install confidence
+- local model support
+- WhatsApp persistence
+- clean docs
+- package publishing
+- higher test coverage
+- contributor-friendly issues</code></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Community</p>
+            <h2>Curious builders, cautious automation, useful bug reports.</h2>
+          </div>
+          <p class="section-summary">The best feedback is specific: what you tried, what broke, what felt unsafe, and what would make the assistant easier to trust.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card"><h3>Setup reports</h3><p>Tell us where install instructions were confusing, especially on macOS and WhatsApp setup.</p></article>
+          <article class="card"><h3>Safety critiques</h3><p>Question the permission model. The project gets better when the boundaries get tested.</p></article>
+          <article class="card"><h3>Tool ideas</h3><p>Suggest small, inspectable tools that solve real workflows without widening access too casually.</p></article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div><strong>SafeClaw</strong><p>Early, practical, and intentionally inspectable.</p></div>
+        <div><a href="index.html">Home</a> &nbsp; <a href="install.html">Install</a> &nbsp; <a href="docs.html">Docs</a></div>
+      </div>
+    </footer>
+  </body>
+</html>

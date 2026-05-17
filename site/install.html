@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Install SafeClaw</title>
+    <meta name="description" content="Install SafeClaw with the quick installer, guided terminal installer, Mac setup wizard, or Ollama local model setup.">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a class="active" href="install.html">Install</a>
+          <a href="docs.html">Docs</a>
+          <a href="api.html">API</a>
+          <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="docs.html">Read docs</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="doc-layout">
+      <aside class="sidebar" aria-label="Install sections">
+        <a class="active" href="#quick">Quick install</a>
+        <a href="#guided">Guided setup</a>
+        <a href="#mac">Mac wizard</a>
+        <a href="#ollama">Ollama</a>
+        <a href="#whatsapp">WhatsApp</a>
+        <a href="#verify">Verify</a>
+      </aside>
+      <article class="doc-main">
+        <p class="section-kicker">Setup</p>
+        <h1>Choose the install path that matches your comfort level.</h1>
+        <p>SafeClaw can be installed as a quick terminal command, a guided terminal flow, or a double-click Mac setup wizard. The global <code>safeclaw</code> command is opt-in so the installer does not silently modify a user’s shell environment.</p>
+
+        <h2 id="quick">Quick install</h2>
+        <p>This installs SafeClaw into <code>~/safeclaw</code>, creates a virtual environment, installs dependencies, copies <code>.env.example</code>, and runs a local CLI check.</p>
+        <pre class="code-block" id="install-quick"><code>curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash</code></pre>
+        <p><button class="button secondary" data-copy="#install-quick">Copy quick install</button></p>
+
+        <h2 id="guided">Guided terminal setup</h2>
+        <p>Use this for non-dev users who want SafeClaw to ask for the install folder, model provider, workspace, permission profile, shell setting, and optional WhatsApp details.</p>
+        <pre class="code-block" id="install-guided"><code>bash &lt;(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)</code></pre>
+        <p><button class="button secondary" data-copy="#install-guided">Copy guided install</button></p>
+
+        <h2 id="mac">Mac double-click wizard</h2>
+        <p>For a setup flow that feels closer to an app installer, clone or download the repo, open <code>mac-setup</code>, and double-click <code>SafeClaw Setup.command</code>. If macOS blocks it, right-click the file, choose Open, then confirm.</p>
+        <div class="steps">
+          <div class="step"><span class="step-number">1</span><div><h3>Pick install settings</h3><p>The wizard asks where SafeClaw should live and whether to add the global command.</p></div></div>
+          <div class="step"><span class="step-number">2</span><div><h3>Choose model and safety defaults</h3><p>Enter OpenAI-compatible settings, workspace path, permission profile, approval mode, and shell behavior.</p></div></div>
+          <div class="step"><span class="step-number">3</span><div><h3>Optional WhatsApp walkthrough</h3><p>The wizard explains Twilio, public webhook URLs, sender allowlists, and persistent service mode.</p></div></div>
+        </div>
+
+        <h2 id="ollama">Use Ollama locally</h2>
+        <p>SafeClaw can use Ollama through its OpenAI-compatible API. Start Ollama, pull a model, then point SafeClaw at the local base URL.</p>
+        <pre class="code-block" id="install-ollama"><code>brew install ollama
+ollama serve
+ollama pull llama3.2:3b
+
+OPENAI_API_KEY=ollama
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_MODEL=llama3.2:3b</code></pre>
+        <p><button class="button secondary" data-copy="#install-ollama">Copy Ollama setup</button></p>
+
+        <h2 id="whatsapp">WhatsApp setup</h2>
+        <p>WhatsApp mode uses Twilio. You need a Twilio Account SID, Auth Token, WhatsApp sender, public HTTPS URL, and allowed sender list. Run:</p>
+        <pre class="code-block" id="install-whatsapp"><code>safeclaw whatsapp-setup https://your-public-url
+safeclaw whatsapp --host 0.0.0.0 --port 8080</code></pre>
+        <p>For persistent Mac mode, use the service commands after your webhook works locally.</p>
+        <pre class="code-block"><code>safeclaw service-install
+safeclaw service-start
+safeclaw service-status</code></pre>
+
+        <h2 id="verify">Verify your setup</h2>
+        <p>Run doctor before debugging individual symptoms. It checks Python, environment config, model settings, workspace permissions, safety profile, Twilio config, port availability, and macOS service status.</p>
+        <pre class="code-block"><code>safeclaw doctor
+safeclaw run "write a one paragraph setup summary"
+safeclaw chat</code></pre>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div><strong>SafeClaw</strong><p>Install gently. Escalate permissions deliberately.</p></div>
+        <div><a href="index.html">Home</a> &nbsp; <a href="docs.html">Docs</a> &nbsp; <a href="api.html">API</a></div>
+      </div>
+    </footer>
+    <script src="assets/site.js"></script>
+  </body>
+</html>

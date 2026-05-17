@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw - Self-hosted AI assistant with explicit permissions</title>
+    <meta name="description" content="SafeClaw is a self-hosted AI assistant focused on local control, explicit permissions, local memory, and automation you can understand.">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a class="active" href="index.html">Home</a>
+          <a href="install.html">Install</a>
+          <a href="docs.html">Docs</a>
+          <a href="api.html">API</a>
+          <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="docs.html">Read docs</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Local control, explicit permissions, inspectable automation</p>
+          <h1>SafeClaw is an assistant you can trust on your own machine.</h1>
+          <p class="hero-lede">A self-hosted terminal and WhatsApp assistant built around narrow permission profiles, local memory, safer file tools, and setup flows normal people can finish.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="install.html">Start setup</a>
+            <a class="button secondary" href="docs.html">Explore the system</a>
+          </div>
+          <div class="hero-metrics" aria-label="Project highlights">
+            <div class="metric"><strong>6</strong><span>permission profiles</span></div>
+            <div class="metric"><strong>Local</strong><span>memory and sessions</span></div>
+            <div class="metric"><strong>Mac</strong><span>guided setup flow</span></div>
+          </div>
+          <div class="hero-stage" aria-hidden="true">
+            <div class="window side">
+              <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              <div class="permission-list">
+                <div class="permission-row"><span>readonly</span><strong>safe</strong></div>
+                <div class="permission-row"><span>workspace-write</span><strong>ask</strong></div>
+                <div class="permission-row"><span>network-allow</span><strong>ask</strong></div>
+                <div class="permission-row"><span>shell-ask</span><strong>ask</strong></div>
+                <div class="permission-row"><span>messaging-allow</span><strong>ask</strong></div>
+              </div>
+            </div>
+            <div class="window main">
+              <div class="window-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              <div class="terminal">
+                <p><span class="prompt">$</span> safeclaw doctor</p>
+                <p class="ok">OK workspace is writable</p>
+                <p class="ok">OK memory is local JSON</p>
+                <p class="warn">WARN shell requires explicit opt-in</p>
+                <p><span class="prompt">$</span> safeclaw run "summarize my setup"</p>
+                <p>Approval required: write_file</p>
+                <p>Profile: workspace-write</p>
+                <p class="ok">Allow this action? [y/N]</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Why it exists</p>
+            <h2>Local does not automatically mean safe.</h2>
+          </div>
+          <p class="section-summary">SafeClaw treats every powerful action as a capability: reading files, writing files, running shell commands, fetching URLs, using memory, and sending WhatsApp messages each get clear boundaries.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card">
+            <span class="tag">Control</span>
+            <h3>Permission profiles</h3>
+            <p>Start readonly, then opt into workspace writes, network access, shell commands, or messaging when the workflow actually needs them.</p>
+          </article>
+          <article class="card">
+            <span class="tag">Memory</span>
+            <h3>Local sessions</h3>
+            <p>Conversation history and durable memory live on your machine as local files, with search, edit, forget, export, and import commands.</p>
+          </article>
+          <article class="card">
+            <span class="tag">Setup</span>
+            <h3>Installer-first UX</h3>
+            <p>Use a fast shell install, guided terminal install, or double-click Mac setup flow with WhatsApp walkthrough and service mode.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="section">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Safety model</p>
+              <h2>Useful automation without vague access.</h2>
+            </div>
+            <p class="section-summary">The assistant can be helpful, but risky operations are deliberately separated so users can see what changed and why.</p>
+          </div>
+          <table class="matrix">
+            <thead>
+              <tr><th>Profile</th><th>Allows</th><th>Typical use</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>readonly</code></td><td>List, read, and search workspace files.</td><td>Ask questions without giving write access.</td></tr>
+              <tr><td><code>workspace-write</code></td><td>Read tools plus write, edit, and patch.</td><td>Let SafeClaw make local project changes with backups.</td></tr>
+              <tr><td><code>network-allow</code></td><td>Read tools plus URL fetch and web search.</td><td>Research tasks that need outside information.</td></tr>
+              <tr><td><code>shell-ask</code></td><td>Read tools plus shell commands behind approval.</td><td>Run local checks with explicit confirmation.</td></tr>
+              <tr><td><code>shell-allow</code></td><td>Shell commands without repeated shell prompts.</td><td>Trusted local automation after setup.</td></tr>
+              <tr><td><code>messaging-allow</code></td><td>Read tools plus outbound WhatsApp sends.</td><td>Remote assistant workflows with a sender allowlist.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="split">
+          <div>
+            <p class="section-kicker">Quick start</p>
+            <h2>Install from one command or use the Mac wizard.</h2>
+            <p class="section-summary">SafeClaw can be tested quickly from Terminal, but the friendlier path walks users through config, model provider, permissions, workspace, and WhatsApp.</p>
+          </div>
+          <div>
+            <pre class="code-block" id="quick-install"><code>curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh | bash
+
+bash &lt;(curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/guided-install.sh)
+
+safeclaw doctor</code></pre>
+            <p><button class="button secondary" data-copy="#quick-install">Copy commands</button></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div>
+          <strong>SafeClaw</strong>
+          <p>Self-hosted automation that earns trust one permission boundary at a time.</p>
+        </div>
+        <div>
+          <a href="install.html">Install</a> &nbsp; <a href="docs.html">Docs</a> &nbsp; <a href="api.html">API</a> &nbsp; <a href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </div>
+    </footer>
+    <script src="assets/site.js"></script>
+  </body>
+</html>

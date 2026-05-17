@@ -5,6 +5,21 @@ SafeClaw: a self-hosted agent with explicit permissions.
 SafeClaw is a small terminal and WhatsApp assistant you can run on your own
 computer. It is focused on trust, local control, and clear safety boundaries.
 
+## Landing page and docs site
+
+This repo includes a static multi-page product site in `site/`.
+
+- `site/index.html` is the landing page.
+- `site/install.html` explains quick install, guided install, Mac setup,
+  Ollama, WhatsApp, and verification.
+- `site/docs.html` documents commands, permissions, memory, WhatsApp, and repo
+  structure.
+- `site/api.html` is the CLI/tool/environment reference.
+- `site/roadmap.html` explains the current roadmap and contribution areas.
+
+You can open `site/index.html` directly in a browser, or publish the `site`
+folder with GitHub Pages, Netlify, Vercel, or any static host.
+
 ## What it does
 
 - Runs from your terminal

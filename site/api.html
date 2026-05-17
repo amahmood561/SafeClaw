@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw API Reference</title>
+    <meta name="description" content="SafeClaw API and command reference for CLI commands, tool capabilities, environment variables, and WhatsApp endpoints.">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="install.html">Install</a>
+          <a href="docs.html">Docs</a>
+          <a class="active" href="api.html">API</a>
+          <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="install.html">Install</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="doc-layout">
+      <aside class="sidebar" aria-label="API sections">
+        <a class="active" href="#cli">CLI</a>
+        <a href="#tools">Tools</a>
+        <a href="#env">Environment</a>
+        <a href="#whatsapp-api">WhatsApp</a>
+        <a href="#exit">Testing</a>
+      </aside>
+      <article class="doc-main">
+        <p class="section-kicker">Reference</p>
+        <h1>API reference for commands, tools, and configuration.</h1>
+        <p>This page is written as a practical reference for users and contributors. SafeClaw’s public surface is currently the CLI, environment configuration, local tool contracts, and the Twilio-compatible WhatsApp webhook.</p>
+
+        <h2 id="cli">CLI commands</h2>
+        <div class="api-item">
+          <h3><code>safeclaw run TASK</code></h3>
+          <p>Runs one task and returns the final assistant response.</p>
+          <pre class="code-block"><code>safeclaw run "search my workspace for installer docs" --session default --model gpt-4.1-mini --permission-profile readonly</code></pre>
+        </div>
+        <div class="api-item">
+          <h3><code>safeclaw chat</code></h3>
+          <p>Starts an interactive terminal loop. Built-in commands include <code>exit</code>, <code>reset</code>, and <code>memory</code>.</p>
+        </div>
+        <div class="api-item">
+          <h3><code>safeclaw doctor</code></h3>
+          <p>Checks setup health. Use <code>--strict</code> in automation when failures should return a non-zero exit.</p>
+          <pre class="code-block"><code>safeclaw doctor --port 8080 --strict</code></pre>
+        </div>
+        <div class="api-item">
+          <h3><code>safeclaw session-config</code></h3>
+          <p>Stores per-session model and permission metadata.</p>
+          <pre class="code-block"><code>safeclaw session-config default --model llama3.2:3b --permission-profile readonly</code></pre>
+        </div>
+
+        <h2 id="tools">Tool capabilities</h2>
+        <p>Tools are exposed to the assistant and gated by permission profile before execution.</p>
+        <table class="matrix">
+          <thead><tr><th>Tool</th><th>Capability</th><th>Risk class</th></tr></thead>
+          <tbody>
+            <tr><td><code>list_files</code></td><td>List files inside the configured workspace.</td><td>Read</td></tr>
+            <tr><td><code>read_file</code></td><td>Read a workspace file with size trimming.</td><td>Read</td></tr>
+            <tr><td><code>search_files</code></td><td>Search names and optionally content inside the workspace.</td><td>Read</td></tr>
+            <tr><td><code>write_file</code></td><td>Create or overwrite a workspace file with backup behavior.</td><td>Write</td></tr>
+            <tr><td><code>edit_file</code></td><td>Replace text in a file, optionally all matches, with backup behavior.</td><td>Write</td></tr>
+            <tr><td><code>apply_patch</code></td><td>Apply a git-style patch after path and patch checks.</td><td>Write</td></tr>
+            <tr><td><code>fetch_url</code></td><td>Fetch a URL and trim output.</td><td>Network</td></tr>
+            <tr><td><code>web_search</code></td><td>Fetch search result data from a web endpoint.</td><td>Network</td></tr>
+            <tr><td><code>shell</code></td><td>Run shell commands when shell is enabled and profile permits it.</td><td>Shell</td></tr>
+            <tr><td><code>send_whatsapp</code></td><td>Send outbound WhatsApp messages through Twilio.</td><td>Messaging</td></tr>
+            <tr><td><code>remember</code></td><td>Save local memory for the current session.</td><td>Memory</td></tr>
+            <tr><td><code>recall_memory</code></td><td>Read local memory for the current session.</td><td>Memory</td></tr>
+            <tr><td><code>search_memory</code></td><td>Search saved local memory notes.</td><td>Memory</td></tr>
+            <tr><td><code>forget</code></td><td>Delete saved memory by id or matching text.</td><td>Memory</td></tr>
+            <tr><td><code>session_status</code></td><td>Show session message counts, memory counts, model, and permission settings.</td><td>Session</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="env">Environment variables</h2>
+        <table class="matrix">
+          <thead><tr><th>Name</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>OPENAI_API_KEY</code></td><td>API key for the configured OpenAI-compatible provider. Use <code>ollama</code> as a dummy value for local Ollama.</td></tr>
+            <tr><td><code>OPENAI_BASE_URL</code></td><td>Optional provider base URL, for example <code>http://localhost:11434/v1</code>.</td></tr>
+            <tr><td><code>OPENAI_MODEL</code></td><td>Default model name.</td></tr>
+            <tr><td><code>WORKSPACE</code></td><td>Folder SafeClaw tools can access.</td></tr>
+            <tr><td><code>SAFECLAW_PERMISSION_PROFILE</code></td><td>Default profile: <code>readonly</code>, <code>workspace-write</code>, <code>network-allow</code>, <code>shell-ask</code>, <code>shell-allow</code>, or <code>messaging-allow</code>.</td></tr>
+            <tr><td><code>SAFECLAW_APPROVAL_MODE</code></td><td>Approval behavior: <code>ask</code>, <code>deny</code>, or <code>auto</code>.</td></tr>
+            <tr><td><code>ALLOW_SHELL</code></td><td>Must be true before shell commands can run.</td></tr>
+            <tr><td><code>MAX_TOOL_STEPS</code></td><td>Maximum number of tool-call rounds for a task.</td></tr>
+            <tr><td><code>TWILIO_ACCOUNT_SID</code></td><td>Twilio account identifier for WhatsApp.</td></tr>
+            <tr><td><code>TWILIO_AUTH_TOKEN</code></td><td>Twilio auth token.</td></tr>
+            <tr><td><code>TWILIO_WHATSAPP_FROM</code></td><td>Twilio WhatsApp sender, such as <code>whatsapp:+14155238886</code>.</td></tr>
+            <tr><td><code>SAFECLAW_ALLOWED_SENDERS</code></td><td>Comma-separated WhatsApp sender allowlist.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="whatsapp-api">WhatsApp webhook</h2>
+        <p>Run <code>safeclaw whatsapp</code> to expose a Twilio-compatible webhook. Configure Twilio to send inbound WhatsApp messages to:</p>
+        <pre class="code-block"><code>POST https://your-public-url/whatsapp</code></pre>
+        <p>Supported remote commands include <code>/help</code>, <code>/status</code>, <code>/memory</code>, <code>/reset</code>, <code>/permissions</code>, <code>/permissions readonly</code>, and <code>/model MODEL</code>.</p>
+
+        <h2 id="exit">Testing and live mode</h2>
+        <p>SafeClaw’s test suite is mocked by default. Live/unmocked tests are opt-in so contributors can run normal tests without spending API calls or hitting real services.</p>
+        <pre class="code-block"><code>python3 -m pytest
+python3 -m pytest --cov=safeclaw --cov-report=term-missing
+python3 -m pytest --run-live</code></pre>
+      </article>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div><strong>SafeClaw</strong><p>Reference surfaces for users and contributors.</p></div>
+        <div><a href="install.html">Install</a> &nbsp; <a href="docs.html">Docs</a> &nbsp; <a href="roadmap.html">Roadmap</a></div>
+      </div>
+    </footer>
+  </body>
+</html>

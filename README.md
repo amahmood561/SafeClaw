@@ -7,15 +7,15 @@ computer. It is focused on trust, local control, and clear safety boundaries.
 
 ## Support SafeClaw
 
-SafeClaw is an early self-hosted assistant project focused on local control,
-explicit permissions, and safer automation.
+SafeClaw is early, independent, and built around a simple goal: local
+automation that is useful without being mysterious.
 
-If the project helps you, you can support development here:
+If you want to support the work, you can buy the team a coffee:
 
-[Buy the team a coffee](https://buymeacoffee.com/alifla)
+[Buy the team a coffee ☕](https://buymeacoffee.com/alifla)
 
-Support helps cover testing, hosting, domain costs, and continued work on
-installers, WhatsApp setup, local model support, and the safety model.
+Support goes toward hosting, domain costs, testing, and continued work on the
+installer, WhatsApp setup, local model support, and permission system.
 
 ## Landing page and docs site
 

@@ -20,6 +20,17 @@ This repo includes a static multi-page product site in `site/`.
 You can open `site/index.html` directly in a browser, or publish the `site`
 folder with GitHub Pages, Netlify, Vercel, or any static host.
 
+For Cloudflare deployment with Web Analytics kept out of git, use:
+
+```text
+Build command: bash scripts/build-site.sh
+Deploy command: npx wrangler deploy
+Build output: site-dist
+```
+
+Set `CF_WEB_ANALYTICS_TOKEN` in Cloudflare's build environment. The script
+injects the analytics beacon into `site-dist/` only during deploy.
+
 ## What it does
 
 - Runs from your terminal

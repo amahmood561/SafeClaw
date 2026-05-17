@@ -26,6 +26,42 @@ Then visit:
 http://localhost:8000
 ```
 
+## Build
+
+The committed `site/` files do not contain the Cloudflare Web Analytics token.
+Build the deployable site into `site-dist/`:
+
+```bash
+bash scripts/build-site.sh
+```
+
+To inject Cloudflare Web Analytics during the build:
+
+```bash
+CF_WEB_ANALYTICS_TOKEN=your-token bash scripts/build-site.sh
+```
+
+`site-dist/` is ignored by git so the generated analytics snippet is not
+committed.
+
+## Deploy with Cloudflare Workers static assets
+
+This repo includes `wrangler.jsonc` configured to deploy `site-dist/`.
+
+Cloudflare build settings:
+
+```text
+Build command: bash scripts/build-site.sh
+Deploy command: npx wrangler deploy
+Root directory: /
+```
+
+Set this build environment variable in Cloudflare:
+
+```text
+CF_WEB_ANALYTICS_TOKEN=your-token
+```
+
 ## Publish with GitHub Pages
 
 1. Push this repo to GitHub.

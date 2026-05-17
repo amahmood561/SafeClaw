@@ -11,6 +11,12 @@ Static product site for SafeClaw.
 - `api.html`: CLI, tool, environment, webhook, and testing reference.
 - `roadmap.html`: Roadmap, open safety questions, and contributor areas.
 
+Support links point to:
+
+```text
+https://buymeacoffee.com/alifla
+```
+
 ## Local preview
 
 Open `index.html` directly in a browser, or run:

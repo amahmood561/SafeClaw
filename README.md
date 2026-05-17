@@ -5,6 +5,18 @@ SafeClaw: a self-hosted agent with explicit permissions.
 SafeClaw is a small terminal and WhatsApp assistant you can run on your own
 computer. It is focused on trust, local control, and clear safety boundaries.
 
+## Support SafeClaw
+
+SafeClaw is an early self-hosted assistant project focused on local control,
+explicit permissions, and safer automation.
+
+If the project helps you, you can support development here:
+
+[Buy the team a coffee](https://buymeacoffee.com/alifla)
+
+Support helps cover testing, hosting, domain costs, and continued work on
+installers, WhatsApp setup, local model support, and the safety model.
+
 ## Landing page and docs site
 
 This repo includes a static multi-page product site in `site/`.

@@ -1,9 +1,18 @@
 # SafeClaw
 
-SafeClaw: a self-hosted agent with explicit permissions.
+SafeClaw: a self-hosted AI assistant with explicit permissions.
 
-SafeClaw is a small terminal and WhatsApp assistant you can run on your own
-computer. It is focused on trust, local control, and clear safety boundaries.
+SafeClaw, also searched as "Safe Claw", is a small self-hosted AI assistant you
+can run on your own computer. It is focused on trust, local control, explicit
+permission profiles, and automation you can understand.
+
+Website: https://safestclaw.com
+
+GitHub: https://github.com/amahmood561/SafeClaw
+
+Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
+explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
+SQLite database tools.
 
 ## Support SafeClaw
 
@@ -19,7 +28,8 @@ installer, WhatsApp setup, local model support, and permission system.
 
 ## Landing page and docs site
 
-This repo includes a static multi-page product site in `site/`.
+This repo includes a static multi-page product site in `site/`, published at
+https://safestclaw.com.
 
 - `site/index.html` is the landing page.
 - `site/install.html` explains quick install, guided install, Mac setup,
@@ -120,6 +130,25 @@ injects the analytics beacon into `site-dist/` only during deploy.
 - `web_search`.
 - Network tools gated by permission profile.
 
+### Database tools
+
+- Read-only SQLite database connectors.
+- Database allowlist with `SAFECLAW_SQLITE_DATABASES`.
+- `safeclaw db-list`.
+- `safeclaw db-test`.
+- `safeclaw db-schema`.
+- `safeclaw db-table`.
+- `safeclaw db-query`.
+- Agent tools:
+  - `list_databases`
+  - `test_database`
+  - `describe_database`
+  - `describe_table`
+  - `run_readonly_query`
+- Database paths must stay inside `WORKSPACE`.
+- Queries are limited to one read-only `SELECT`, `WITH`, or `EXPLAIN` statement.
+- Row results are capped by a configurable per-query limit.
+
 ### Memory and sessions
 
 - Durable session memory.
@@ -146,6 +175,7 @@ injects the analytics beacon into `site-dist/` only during deploy.
   - `shell-ask`
   - `shell-allow`
   - `messaging-allow`
+  - `db-readonly`
 - Approval modes:
   - `ask`
   - `deny`
@@ -177,6 +207,11 @@ injects the analytics beacon into `site-dist/` only during deploy.
 - `safeclaw compact`
 - `safeclaw export`
 - `safeclaw import`
+- `safeclaw db-list`
+- `safeclaw db-test`
+- `safeclaw db-schema`
+- `safeclaw db-table`
+- `safeclaw db-query`
 - `safeclaw whatsapp`
 - `safeclaw whatsapp-setup`
 - `safeclaw service-install`
@@ -219,6 +254,42 @@ mac-setup/SafeClaw Setup.command
 ```
 
 ## Setup
+
+### Database setup
+
+SafeClaw supports a conservative first database connector: read-only SQLite
+databases allowlisted inside the workspace.
+
+Add databases to `.env`:
+
+```env
+WORKSPACE=./workspace
+SAFECLAW_SQLITE_DATABASES=app=app.db,notes=data/notes.db
+SAFECLAW_PERMISSION_PROFILE=db-readonly
+```
+
+Each path is relative to `WORKSPACE`. SafeClaw blocks database paths that escape
+the workspace.
+
+Useful commands:
+
+```bash
+safeclaw db-list
+safeclaw db-test app
+safeclaw db-schema app
+safeclaw db-table app users
+safeclaw db-query app "select id, name from users order by id" --limit 25
+```
+
+Database safety rules:
+
+- SQLite only in this first version.
+- Read-only connections are opened with SQLite `mode=ro`.
+- Write statements such as `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, and
+  `CREATE` are blocked.
+- Multiple statements are blocked.
+- `PRAGMA` is blocked for user queries.
+- Agent access requires the `db-readonly` permission profile.
 
 ### Mac double-click setup
 
@@ -505,6 +576,11 @@ safeclaw reset --session default
 safeclaw compact --session default
 safeclaw export --session default
 safeclaw import path/to/session-export.json --session restored
+safeclaw db-list
+safeclaw db-test app
+safeclaw db-schema app
+safeclaw db-table app users
+safeclaw db-query app "select id, name from users limit 10"
 safeclaw whatsapp-setup
 safeclaw whatsapp --port 8080
 safeclaw service-install
@@ -526,7 +602,7 @@ root.
 | `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, optionally creates a global launcher, copies `.env.example`, and runs `safeclaw tools`. |
 | `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, optional global command setup, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
 | `mac-setup/` | Double-click macOS setup wizard. | Uses macOS dialogs to collect setup choices, installs SafeClaw, writes `.env`, runs diagnostics, and can configure persistent WhatsApp service mode. |
-| `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, Twilio, and allowed WhatsApp senders. |
+| `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, SQLite databases, Twilio, and allowed WhatsApp senders. |
 | `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
 | `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |
 | `workspace/` | Local working area created at runtime. | Stores files SafeClaw can touch, plus local sessions, memories, logs, backups, and exports. |
@@ -537,6 +613,7 @@ root.
 | --- | --- | --- |
 | `safeclaw/__init__.py` | Package marker. | Lets Python import SafeClaw as a package. |
 | `safeclaw/config.py` | Environment/config loader. | Loads API settings, model name, workspace path, shell flag, permission profile, approval mode, Twilio credentials, and WhatsApp sender allowlist. |
+| `safeclaw/database.py` | Read-only database connector. | Loads allowlisted SQLite databases, checks workspace-safe paths, describes schemas/tables, tests connections, and runs capped read-only queries. |
 | `safeclaw/cli.py` | Typer command-line interface. | Powers `safeclaw run`, `chat`, `tools`, sessions, memory commands, export/import, WhatsApp setup, and persistent service commands. |
 | `safeclaw/agent.py` | Main agent loop. | Builds task context, sends messages to the LLM, handles structured tool calls, saves logs, remembers session state, and auto-compacts long sessions. |
 | `safeclaw/llm.py` | OpenAI-compatible LLM client. | Sends chat-completion requests to `OPENAI_BASE_URL`, supports structured tool calls, and validates missing API keys. |

@@ -1,0 +1,9 @@
+{
+  "name": "SafeClaw",
+  "short_name": "SafeClaw",
+  "description": "Self-hosted AI assistant with explicit permissions, local memory, and inspectable automation.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f8faf8",
+  "theme_color": "#17211c"
+}

@@ -30,6 +30,11 @@ def test_help_lists_all_commands():
         "memory-edit",
         "export",
         "import",
+        "db-list",
+        "db-test",
+        "db-schema",
+        "db-table",
+        "db-query",
         "whatsapp",
         "whatsapp-setup",
         "service-install",
@@ -196,6 +201,20 @@ def test_export_import_commands(monkeypatch):
 
     assert "export:s1:out.json" in invoke("export", "--session", "s1", "--output", "out.json").output
     assert "import:out.json:s2" in invoke("import", "out.json", "--session", "s2").output
+
+
+def test_database_commands(monkeypatch):
+    monkeypatch.setattr(cli, "list_databases", lambda: "db-list")
+    monkeypatch.setattr(cli, "test_database", lambda name: f"db-test:{name}")
+    monkeypatch.setattr(cli, "describe_database", lambda name: f"db-schema:{name}")
+    monkeypatch.setattr(cli, "describe_table", lambda name, table: f"db-table:{name}:{table}")
+    monkeypatch.setattr(cli, "run_readonly_query", lambda name, query, limit=50: f"db-query:{name}:{query}:{limit}")
+
+    assert "db-list" in invoke("db-list").output
+    assert "db-test:app" in invoke("db-test", "app").output
+    assert "db-schema:app" in invoke("db-schema", "app").output
+    assert "db-table:app:users" in invoke("db-table", "app", "users").output
+    assert "db-query:app:select 1:3" in invoke("db-query", "app", "select 1", "--limit", "3").output
 
 
 def test_whatsapp_command_calls_server(monkeypatch):

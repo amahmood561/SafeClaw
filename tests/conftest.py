@@ -8,18 +8,25 @@ def isolated_workspace(tmp_path, monkeypatch):
 
     import safeclaw.agent as agent
     import safeclaw.config as config
+    import safeclaw.database as database
     import safeclaw.doctor as doctor
     import safeclaw.sessions as sessions
     import safeclaw.tools as tools
 
     monkeypatch.setattr(config, "WORKSPACE", workspace)
+    monkeypatch.setattr(database, "WORKSPACE", workspace)
     monkeypatch.setattr(tools, "WORKSPACE", workspace)
     monkeypatch.setattr(agent, "WORKSPACE", workspace)
     monkeypatch.setattr(doctor, "WORKSPACE", workspace)
     monkeypatch.setattr(sessions, "SESSIONS_DIR", workspace / ".safeclaw_sessions")
     monkeypatch.setattr(sessions, "MEMORY_DIR", workspace / ".safeclaw_memory")
     monkeypatch.setattr(sessions, "EXPORTS_DIR", workspace / ".safeclaw_exports")
-    yield
+    yield workspace
+
+
+@pytest.fixture
+def workspace(isolated_workspace):
+    return isolated_workspace
 
 
 def pytest_addoption(parser):

@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, quote_plus, unquote, urlparse
 
 import requests
 
+from .database import describe_database, describe_table, list_databases, run_readonly_query, test_database
 from .config import (
     ALLOW_SHELL,
     APPROVAL_MODE,
@@ -28,6 +29,7 @@ WRITE_TOOLS = {"write_file", "edit_file", "apply_patch"}
 NETWORK_TOOLS = {"fetch_url", "web_search"}
 SHELL_TOOLS = {"shell"}
 MESSAGING_TOOLS = {"send_whatsapp"}
+DATABASE_TOOLS = {"list_databases", "test_database", "describe_database", "describe_table", "run_readonly_query"}
 RISKY_TOOLS = WRITE_TOOLS | NETWORK_TOOLS | SHELL_TOOLS | MESSAGING_TOOLS
 
 PROFILE_CAPABILITIES = {
@@ -37,6 +39,7 @@ PROFILE_CAPABILITIES = {
     "shell-ask": READ_TOOLS | SHELL_TOOLS,
     "shell-allow": READ_TOOLS | SHELL_TOOLS,
     "messaging-allow": READ_TOOLS | MESSAGING_TOOLS,
+    "db-readonly": READ_TOOLS | DATABASE_TOOLS,
 }
 
 
@@ -450,6 +453,69 @@ TOOL_SPECS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_databases",
+            "description": "List configured read-only databases.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "test_database",
+            "description": "Test a configured read-only database connection.",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "describe_database",
+            "description": "List tables and row counts for a configured read-only database.",
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "describe_table",
+            "description": "Describe columns for a table in a configured read-only database.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "table": {"type": "string"},
+                },
+                "required": ["name", "table"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_readonly_query",
+            "description": "Run one read-only SQLite SELECT/WITH/EXPLAIN query against a configured database.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "query": {"type": "string"},
+                    "limit": {"type": "integer", "default": 50},
+                },
+                "required": ["name", "query"],
+            },
+        },
+    },
 ]
 
 
@@ -471,6 +537,11 @@ def run_tool(
         "web_search": web_search,
         "shell": shell,
         "send_whatsapp": send_whatsapp,
+        "list_databases": list_databases,
+        "test_database": test_database,
+        "describe_database": describe_database,
+        "describe_table": describe_table,
+        "run_readonly_query": run_readonly_query,
     }
     if name not in functions:
         return f"Unknown tool: {name}"
@@ -500,6 +571,11 @@ Available local tools:
 - web_search(query)
 - shell(command) disabled unless ALLOW_SHELL=true
 - send_whatsapp(to, body) if Twilio env vars are configured
+- list_databases()
+- test_database(name)
+- describe_database(name)
+- describe_table(name, table)
+- run_readonly_query(name, query, limit=50)
 
 Permission profiles:
 - readonly: read/list/search workspace files only
@@ -508,6 +584,7 @@ Permission profiles:
 - shell-ask: readonly plus shell with approval and ALLOW_SHELL=true
 - shell-allow: readonly plus shell without approval and ALLOW_SHELL=true
 - messaging-allow: readonly plus send_whatsapp
+- db-readonly: readonly plus configured read-only database tools
 
 This version supports automatic OpenAI-style function calling.
 """.strip()

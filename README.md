@@ -10,9 +10,18 @@ Website: https://safestclaw.com
 
 GitHub: https://github.com/amahmood561/SafeClaw
 
+Reddit community: https://www.reddit.com/r/Safeclaw/
+
 Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
 SQLite database tools.
+
+## Community
+
+Join the SafeClaw subreddit for setup help, roadmap ideas, safety discussions,
+WhatsApp workflows, self-hosting notes, bug reports, and contributor updates:
+
+https://www.reddit.com/r/Safeclaw/
 
 ## Support SafeClaw
 

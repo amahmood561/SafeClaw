@@ -17,6 +17,12 @@ Support links point to:
 https://buymeacoffee.com/alifla
 ```
 
+Community links point to:
+
+```text
+https://www.reddit.com/r/Safeclaw/
+```
+
 ## Local preview
 
 Open `index.html` directly in a browser, or run:

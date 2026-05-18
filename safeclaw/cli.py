@@ -3,6 +3,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from .agent import run_task
+from .database import describe_database, describe_table, list_databases, run_readonly_query, test_database
 from .doctor import doctor_summary, run_doctor
 from .sessions import (
     compact_session,
@@ -158,6 +159,31 @@ def export(session: str = "default", output: str = ""):
 def import_(path: str, session: str = ""):
     """Import a session export."""
     console.print(import_session(path, session or None))
+
+@app.command("db-list")
+def db_list():
+    """List configured read-only databases."""
+    console.print(list_databases(), markup=False)
+
+@app.command("db-test")
+def db_test(name: str):
+    """Test a configured read-only database connection."""
+    console.print(test_database(name), markup=False)
+
+@app.command("db-schema")
+def db_schema(name: str):
+    """Show tables and row counts for a configured database."""
+    console.print(describe_database(name), markup=False)
+
+@app.command("db-table")
+def db_table(name: str, table: str):
+    """Describe a table in a configured database."""
+    console.print(describe_table(name, table), markup=False)
+
+@app.command("db-query")
+def db_query(name: str, query: str, limit: int = 50):
+    """Run one read-only query against a configured database."""
+    console.print(run_readonly_query(name, query, limit=limit), markup=False)
 
 @app.command("whatsapp")
 def whatsapp(host: str = "0.0.0.0", port: int = 8080):

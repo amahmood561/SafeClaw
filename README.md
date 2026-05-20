@@ -45,6 +45,7 @@ https://safestclaw.com.
   structure.
 - `site/api.html` is the CLI/tool/environment reference.
 - `site/roadmap.html` explains the current roadmap and contribution areas.
+- `ROADMAP_TODO.md` tracks the next Mac app chat improvements to work on.
 
 You can open `site/index.html` directly in a browser, or publish the `site`
 folder with GitHub Pages, Netlify, Vercel, or any static host.

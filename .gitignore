@@ -16,3 +16,4 @@ site-dist/
 .dev.vars*
 !.dev.vars.example
 !.env.example
+mac-app/node_modules/*

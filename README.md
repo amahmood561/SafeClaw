@@ -10,18 +10,16 @@ Website: https://safestclaw.com
 
 GitHub: https://github.com/amahmood561/SafeClaw
 
-Reddit community: https://www.reddit.com/r/Safeclaw/
-
 Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
 SQLite database tools.
 
 ## Community
 
-Join the SafeClaw subreddit for setup help, roadmap ideas, safety discussions,
-WhatsApp workflows, self-hosting notes, bug reports, and contributor updates:
+Use GitHub for setup help, roadmap ideas, safety discussions, WhatsApp
+workflows, self-hosting notes, bug reports, and contributor updates:
 
-https://www.reddit.com/r/Safeclaw/
+https://github.com/amahmood561/SafeClaw
 
 ## Support SafeClaw
 
@@ -50,6 +48,20 @@ https://safestclaw.com.
 
 You can open `site/index.html` directly in a browser, or publish the `site`
 folder with GitHub Pages, Netlify, Vercel, or any static host.
+
+### Mac App Screenshots
+
+**Setup**
+
+![SafeClaw Mac app setup screen](docs/screenshots/mac-app-setup.png)
+
+**Chat**
+
+![SafeClaw Mac app chat screen](docs/screenshots/mac-app-chat.png)
+
+**Databases**
+
+![SafeClaw Mac app database screen](docs/screenshots/mac-app-databases.png)
 
 For Cloudflare deployment with Web Analytics kept out of git, use:
 
@@ -87,6 +99,7 @@ injects the analytics beacon into `site-dist/` only during deploy.
 - Fast installer with `install.sh`.
 - Guided non-developer installer with `guided-install.sh`.
 - Double-click macOS setup wizard in `mac-setup/`.
+- Separate Electron macOS app wrapper in `mac-app/`.
 - Optional user-level `safeclaw` launcher for on-demand use from any terminal.
 - Manual Python setup.
 - Editable CLI install.
@@ -262,6 +275,12 @@ On macOS, there is also a double-click setup wizard:
 mac-setup/SafeClaw Setup.command
 ```
 
+There is also a separate Electron Mac app wrapper:
+
+```text
+mac-app/
+```
+
 ## Setup
 
 ### Database setup
@@ -338,6 +357,38 @@ The wizard writes logs to:
 ```text
 ~/Library/Logs/SafeClaw/mac-setup.log
 ```
+
+### Electron Mac app wrapper
+
+For users who want a real desktop UI instead of setup dialogs, use the separate
+Electron app in `mac-app/`.
+
+```bash
+cd mac-app
+npm install
+npm start
+```
+
+The app can:
+
+- Install or update SafeClaw.
+- Save `.env` configuration.
+- Run `safeclaw doctor`.
+- Run one-off tasks.
+- Chat with SafeClaw inside the app interface.
+- Start the WhatsApp webhook.
+- Install, start, stop, and inspect the persistent WhatsApp service.
+- Open the SafeClaw install folder and logs.
+
+Build a local macOS app bundle:
+
+```bash
+cd mac-app
+npm run build:mac
+```
+
+The app is a wrapper around the existing CLI. It does not replace the terminal
+commands and it does not change the existing `mac-setup/` wizard.
 
 ### One-line setup
 
@@ -611,6 +662,7 @@ root.
 | `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, optionally creates a global launcher, copies `.env.example`, and runs `safeclaw tools`. |
 | `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, optional global command setup, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
 | `mac-setup/` | Double-click macOS setup wizard. | Uses macOS dialogs to collect setup choices, installs SafeClaw, writes `.env`, runs diagnostics, and can configure persistent WhatsApp service mode. |
+| `mac-app/` | Electron macOS app wrapper. | Provides a desktop UI for installing/updating SafeClaw, saving config, running doctor/tasks, in-app chat, database commands, and managing WhatsApp service commands. |
 | `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, SQLite databases, Twilio, and allowed WhatsApp senders. |
 | `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
 | `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |

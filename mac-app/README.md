@@ -1,0 +1,52 @@
+# SafeClaw Mac App
+
+This folder contains a separate Electron desktop app for SafeClaw.
+
+The app gives non-terminal users a clearer setup and control surface while
+still calling the existing SafeClaw installer and CLI commands underneath.
+
+## What the app does
+
+- Install or update SafeClaw into `~/safeclaw` by default.
+- Save a local `.env` file.
+- Run `safeclaw doctor`.
+- Run one-off SafeClaw tasks.
+- Chat with SafeClaw inside the app interface.
+- Drag and drop files or links into chat.
+- Open the SafeClaw install folder.
+- Start the WhatsApp webhook.
+- Install, start, stop, and inspect the macOS WhatsApp service.
+
+## How to use
+
+1. Install Node.js if needed.
+2. Open Terminal in `mac-app/`.
+3. Run `npm install`.
+4. Run `npm start`.
+5. Click **Install / Update**.
+6. Add API/model/workspace settings.
+7. Click **Save Config**.
+8. Click **Run Doctor**.
+
+## Build a macOS app bundle
+
+```bash
+cd mac-app
+npm install
+npm run build:mac
+```
+
+The build output is written to:
+
+```text
+mac-app/dist/
+```
+
+## Notes
+
+- This app does not replace the CLI.
+- It does not bundle Python or SafeClaw dependencies yet.
+- It expects `python3` and `git` to be available on the Mac.
+- It keeps the actual SafeClaw install separate, usually at `~/safeclaw`.
+- The existing `mac-setup/` wizard is unchanged.
+- Dropped text files are sent with a capped preview. Larger or binary files are sent as local file references so users do not accidentally dump huge content into a chat request.

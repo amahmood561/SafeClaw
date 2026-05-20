@@ -17,10 +17,10 @@ Support links point to:
 https://buymeacoffee.com/alifla
 ```
 
-Community links point to:
+Community links point to the GitHub repository:
 
 ```text
-https://www.reddit.com/r/Safeclaw/
+https://github.com/amahmood561/SafeClaw
 ```
 
 ## Local preview

@@ -1,0 +1,230 @@
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const DEFAULTS = {
+  repoUrl: 'https://github.com/amahmood561/SafeClaw.git',
+  ref: 'main',
+  installDir: path.join(os.homedir(), 'safeclaw'),
+  baseUrl: 'https://api.openai.com/v1',
+  model: 'gpt-4.1-mini',
+  workspace: './workspace',
+  permissionProfile: 'readonly',
+  approvalMode: 'ask',
+  maxToolSteps: '6',
+  whatsappPort: '8080',
+};
+
+let mainWindow;
+let runningProcess = null;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1180,
+    height: 820,
+    minWidth: 980,
+    minHeight: 700,
+    title: 'SafeClaw',
+    show: false,
+    backgroundColor: '#f6f7f5',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    mainWindow.focus();
+    app.focus({ steal: true });
+  });
+}
+
+app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
+
+function safeclawBin(installDir) {
+  return path.join(installDir, '.venv', 'bin', 'safeclaw');
+}
+
+function commandEnv(installDir) {
+  return {
+    ...process.env,
+    PATH: `${path.join(installDir, '.venv', 'bin')}:/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ''}`,
+  };
+}
+
+function send(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
+function runCommand({ id, title, command, args = [], cwd }) {
+  if (runningProcess) {
+    return { ok: false, error: 'Another SafeClaw command is already running.' };
+  }
+
+  send('command-output', { id, type: 'start', text: `==> ${title}\n$ ${[command, ...args].join(' ')}\n` });
+
+  runningProcess = spawn(command, args, {
+    cwd,
+    env: commandEnv(cwd),
+    shell: false,
+  });
+
+  runningProcess.stdout.on('data', (data) => {
+    send('command-output', { id, type: 'stdout', text: data.toString() });
+  });
+
+  runningProcess.stderr.on('data', (data) => {
+    send('command-output', { id, type: 'stderr', text: data.toString() });
+  });
+
+  runningProcess.on('error', (error) => {
+    send('command-output', { id, type: 'error', text: `${error.message}\n` });
+    runningProcess = null;
+  });
+
+  runningProcess.on('close', (code) => {
+    send('command-output', { id, type: 'exit', text: `\n[exit ${code}]\n`, code });
+    runningProcess = null;
+  });
+
+  return { ok: true };
+}
+
+function safeclawCommand(settings, args) {
+  const bin = safeclawBin(settings.installDir);
+  if (fs.existsSync(bin)) {
+    return { command: bin, args };
+  }
+  return { command: 'python3', args: ['-m', 'safeclaw.cli', ...args] };
+}
+
+ipcMain.handle('defaults', () => DEFAULTS);
+
+ipcMain.handle('load-env', (_event, installDir) => {
+  const envPath = path.join(installDir, '.env');
+  if (!fs.existsSync(envPath)) {
+    return {};
+  }
+  const values = {};
+  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    if (!line || line.startsWith('#') || !line.includes('=')) continue;
+    const [key, ...rest] = line.split('=');
+    values[key.trim()] = rest.join('=').trim();
+  }
+  return values;
+});
+
+ipcMain.handle('save-env', (_event, settings) => {
+  fs.mkdirSync(settings.installDir, { recursive: true });
+  const envPath = path.join(settings.installDir, '.env');
+  const content = [
+    '# Use OpenAI-compatible API endpoint',
+    `OPENAI_API_KEY=${settings.apiKey || ''}`,
+    `OPENAI_BASE_URL=${settings.baseUrl || DEFAULTS.baseUrl}`,
+    `OPENAI_MODEL=${settings.model || DEFAULTS.model}`,
+    '',
+    '# Agent settings',
+    `WORKSPACE=${settings.workspace || DEFAULTS.workspace}`,
+    `ALLOW_SHELL=${settings.allowShell ? 'true' : 'false'}`,
+    `SAFECLAW_PERMISSION_PROFILE=${settings.permissionProfile || DEFAULTS.permissionProfile}`,
+    `SAFECLAW_APPROVAL_MODE=${settings.approvalMode || DEFAULTS.approvalMode}`,
+    `MAX_TOOL_STEPS=${settings.maxToolSteps || DEFAULTS.maxToolSteps}`,
+    '',
+    '# Optional read-only SQLite databases.',
+    `SAFECLAW_SQLITE_DATABASES=${settings.sqliteDatabases || ''}`,
+    '',
+    '# Optional Twilio WhatsApp outbound support.',
+    `TWILIO_ACCOUNT_SID=${settings.twilioSid || ''}`,
+    `TWILIO_AUTH_TOKEN=${settings.twilioToken || ''}`,
+    `TWILIO_WHATSAPP_FROM=${settings.twilioFrom || 'whatsapp:+14155238886'}`,
+    `SAFECLAW_ALLOWED_SENDERS=${settings.allowedSenders || ''}`,
+    '',
+  ].join('\n');
+  fs.writeFileSync(envPath, content, { mode: 0o600 });
+  return { ok: true, path: envPath };
+});
+
+ipcMain.handle('install-safeclaw', (_event, settings) => {
+  const script = [
+    'curl -fsSL https://raw.githubusercontent.com/amahmood561/SafeClaw/main/install.sh',
+    '|',
+    `SAFECLAW_DIR=${JSON.stringify(settings.installDir)}`,
+    `SAFECLAW_REPO=${JSON.stringify(settings.repoUrl || DEFAULTS.repoUrl)}`,
+    `SAFECLAW_REF=${JSON.stringify(settings.ref || DEFAULTS.ref)}`,
+    'bash',
+  ].join(' ');
+  return runCommand({
+    id: 'install',
+    title: 'Install / Update SafeClaw',
+    command: 'bash',
+    args: ['-lc', script],
+    cwd: os.homedir(),
+  });
+});
+
+ipcMain.handle('safeclaw-command', (_event, settings, commandArgs, title = 'SafeClaw command') => {
+  const resolved = safeclawCommand(settings, commandArgs);
+  return runCommand({
+    id: commandArgs[0] || 'safeclaw',
+    title,
+    command: resolved.command,
+    args: resolved.args,
+    cwd: settings.installDir,
+  });
+});
+
+ipcMain.handle('open-path', (_event, targetPath) => {
+  fs.mkdirSync(targetPath, { recursive: true });
+  shell.openPath(targetPath);
+  return { ok: true };
+});
+
+ipcMain.handle('open-logs', () => {
+  const logs = path.join(os.homedir(), 'Library', 'Logs', 'SafeClaw');
+  fs.mkdirSync(logs, { recursive: true });
+  shell.openPath(logs);
+  return { ok: true };
+});
+
+ipcMain.handle('open-url', (_event, url) => {
+  shell.openExternal(url);
+  return { ok: true };
+});
+
+ipcMain.handle('open-chat', (_event, settings) => {
+  const bin = safeclawBin(settings.installDir);
+  const command = `cd ${JSON.stringify(settings.installDir)} && ${JSON.stringify(bin)} chat`;
+  spawn('osascript', ['-e', `tell application "Terminal" to do script ${JSON.stringify(command)}`], {
+    detached: true,
+    stdio: 'ignore',
+  }).unref();
+  return { ok: true };
+});
+
+ipcMain.handle('stop-command', () => {
+  if (runningProcess) {
+    runningProcess.kill();
+    runningProcess = null;
+    return { ok: true };
+  }
+  return { ok: false, error: 'No command is running.' };
+});

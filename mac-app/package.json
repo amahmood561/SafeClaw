@@ -1,0 +1,34 @@
+{
+  "name": "safeclaw-mac-app",
+  "version": "0.1.0",
+  "description": "SafeClaw desktop app for macOS",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "build:mac": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --dir"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.safeclaw.app",
+    "productName": "SafeClaw",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dir",
+        "dmg"
+      ]
+    }
+  }
+}

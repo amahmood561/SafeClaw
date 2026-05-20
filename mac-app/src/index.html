@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">S</div>
+        <div>
+          <strong>SafeClaw</strong>
+          <span>Local assistant control center</span>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-view="setup">Setup</button>
+        <button class="nav-item" data-view="run">Run</button>
+        <button class="nav-item" data-view="chat">Chat</button>
+        <button class="nav-item" data-view="whatsapp">WhatsApp</button>
+        <button class="nav-item" data-view="database">Databases</button>
+        <button class="nav-item" data-view="logs">Output</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="openRepo" class="ghost">GitHub</button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Self-hosted. Explicit permissions. Local control.</p>
+          <h1 id="viewTitle">Setup</h1>
+        </div>
+        <div class="status-pill" id="statusPill">Idle</div>
+      </header>
+
+      <section id="setup" class="view active">
+        <div class="panel intro">
+          <div>
+            <h2>Get SafeClaw ready without living in Terminal.</h2>
+            <p>Install the CLI, save local config, and run diagnostics from one place. Nothing here gives SafeClaw extra permissions by itself.</p>
+          </div>
+          <button id="installBtn" class="primary">Install / Update</button>
+        </div>
+
+        <div class="grid two">
+          <div class="panel">
+            <h3>Install</h3>
+            <label>Install folder<input id="installDir" autocomplete="off"></label>
+            <label>Git repo<input id="repoUrl" autocomplete="off"></label>
+            <label>Branch or tag<input id="ref" autocomplete="off"></label>
+            <div class="button-row">
+              <button id="openFolderBtn">Open Folder</button>
+              <button id="doctorBtn">Run Doctor</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Model</h3>
+            <label>API key<input id="apiKey" type="password" autocomplete="off"></label>
+            <label>Base URL<input id="baseUrl" autocomplete="off"></label>
+            <label>Model<input id="model" autocomplete="off"></label>
+            <div class="hint">Use <code>http://localhost:11434/v1</code> and API key <code>ollama</code> for local Ollama.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Safety defaults</h3>
+          <div class="grid three compact">
+            <label>Workspace<input id="workspace" autocomplete="off"></label>
+            <label>Permission profile<select id="permissionProfile"></select></label>
+            <label>Approval mode<select id="approvalMode"></select></label>
+          </div>
+          <label class="check"><input id="allowShell" type="checkbox"> Allow shell commands</label>
+          <div class="button-row">
+            <button id="saveConfigBtn" class="primary">Save Config</button>
+            <button id="loadConfigBtn">Reload Config</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="run" class="view">
+        <div class="panel">
+          <h2>Run a task</h2>
+          <p>Use one-shot tasks for practical work. For a conversation, use the in-app Chat tab.</p>
+          <textarea id="taskInput" rows="5">summarize my SafeClaw setup</textarea>
+          <div class="button-row">
+            <button id="runTaskBtn" class="primary">Run Task</button>
+            <button id="toolsBtn">Show Tools</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="chat" class="view">
+        <div class="chat-shell">
+          <div class="chat-main panel">
+            <div class="chat-header">
+              <div>
+                <h2>Chat with SafeClaw</h2>
+                <p>Messages run through SafeClaw sessions, so history and memory stay local.</p>
+              </div>
+              <button id="clearChatBtn">Clear View</button>
+            </div>
+            <div id="chatMessages" class="chat-messages" aria-live="polite">
+              <div class="empty-chat">
+                <strong>Start with a practical task.</strong>
+                <span>Ask SafeClaw to inspect setup, summarize files, plan changes, or explain what it can access. Drop files or links here to include them.</span>
+              </div>
+            </div>
+            <div id="chatDropZone" class="chat-drop-zone">
+              <strong>Drop files or links here</strong>
+              <span>Text files are attached with a capped preview. Other files are sent as local file references.</span>
+            </div>
+            <div id="chatAttachments" class="chat-attachments" aria-live="polite"></div>
+            <div class="chat-composer">
+              <textarea id="chatInput" rows="3" placeholder="Ask SafeClaw something..."></textarea>
+              <button id="sendChatBtn" class="primary">Send</button>
+            </div>
+          </div>
+          <aside class="chat-side panel">
+            <h3>Session</h3>
+            <label>Session name<input id="chatSession" value="desktop"></label>
+            <label>Model override<input id="chatModel" placeholder="optional"></label>
+            <label>Permission profile<select id="chatPermission"></select></label>
+            <div class="hint">Use <code>readonly</code> for questions. Switch to wider profiles only when the task needs tools.</div>
+            <div class="button-row wrap">
+              <button id="chatStatusBtn">Status</button>
+              <button id="chatMemoryBtn">Memory</button>
+              <button id="chatResetBtn">Reset Session</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="whatsapp" class="view">
+        <div class="panel intro">
+          <div>
+            <h2>Talk to SafeClaw over WhatsApp.</h2>
+            <p>Configure Twilio in <code>.env</code>, expose <code>/whatsapp</code> with a public HTTPS URL, then run the webhook or persistent service.</p>
+          </div>
+          <button id="twilioBtn">Open Twilio</button>
+        </div>
+        <div class="grid two">
+          <div class="panel">
+            <h3>Webhook</h3>
+            <label>Port<input id="whatsappPort" autocomplete="off"></label>
+            <div class="button-row">
+              <button id="startWhatsappBtn" class="primary">Start Webhook</button>
+              <button id="whatsappSetupBtn">Show Setup</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Persistent Mac service</h3>
+            <div class="button-row wrap">
+              <button id="installServiceBtn">Install Service</button>
+              <button id="serviceStatusBtn">Status</button>
+              <button id="serviceStartBtn">Start</button>
+              <button id="serviceStopBtn">Stop</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="database" class="view">
+        <div class="panel">
+          <h2>Read-only SQLite databases</h2>
+          <p>Allowlist SQLite databases inside the workspace, then inspect schemas and run capped read-only queries.</p>
+          <label>SAFECLAW_SQLITE_DATABASES<input id="sqliteDatabases" placeholder="app=app.db,notes=data/notes.db"></label>
+          <div class="grid three compact">
+            <label>Database name<input id="dbName" value="app"></label>
+            <label>Table<input id="dbTable" value="users"></label>
+            <label>Limit<input id="dbLimit" value="25"></label>
+          </div>
+          <textarea id="dbQuery" rows="5">select * from users limit 25</textarea>
+          <div class="button-row wrap">
+            <button id="dbSaveBtn">Save DB Config</button>
+            <button id="dbListBtn">List</button>
+            <button id="dbSchemaBtn">Schema</button>
+            <button id="dbTableBtn">Table</button>
+            <button id="dbQueryBtn" class="primary">Run Read-only Query</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="logs" class="view">
+        <div class="panel output-panel">
+          <div class="output-header">
+            <h2>Output</h2>
+            <div class="button-row">
+              <button id="stopBtn">Stop</button>
+              <button id="clearOutputBtn">Clear</button>
+              <button id="openLogsBtn">Open Logs</button>
+            </div>
+          </div>
+          <pre id="output"></pre>
+        </div>
+      </section>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

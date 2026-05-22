@@ -40,6 +40,7 @@ let activeTaskResult = false;
 let activeTaskResultId = '';
 let activeTaskHadEvents = false;
 let taskProviderErrorActive = false;
+let activeTaskText = '';
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -202,8 +203,106 @@ function setTaskResultState(text, mode = 'idle') {
 
 function clearTaskResult() {
   $('taskResult').hidden = false;
-  $('taskResultBody').textContent = '';
+  activeTaskText = '';
+  renderTaskResultText();
   setTaskResultState('Running', 'running');
+}
+
+function fixMojibake(text) {
+  return String(text || '')
+    .replaceAll('â', '-')
+    .replaceAll('â', '-')
+    .replaceAll('â', '-')
+    .replaceAll('â', "'")
+    .replaceAll('â', "'")
+    .replaceAll('â', '"')
+    .replaceAll('â', '"')
+    .replaceAll('â¢', '-')
+    .replaceAll('Â ', ' ')
+    .replaceAll('Â', '');
+}
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function inlineMarkdown(text) {
+  return escapeHtml(fixMojibake(text))
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+function tableHtml(lines) {
+  const rows = lines
+    .filter((line) => !/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line))
+    .map((line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => inlineMarkdown(cell.trim())));
+  if (!rows.length) return '';
+  const [head, ...body] = rows;
+  return `<div class="markdown-table-wrap"><table class="markdown-table"><thead><tr>${head.map((cell) => `<th>${cell}</th>`).join('')}</tr></thead><tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderMarkdownLite(text) {
+  const lines = fixMojibake(text).split(/\r?\n/);
+  const html = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!line.trim()) continue;
+    if (/^\s*-{3,}\s*$/.test(line)) {
+      html.push('<hr>');
+      continue;
+    }
+    if (/^\s*\|.+\|\s*$/.test(line)) {
+      const tableLines = [];
+      while (index < lines.length && /^\s*\|.+\|\s*$/.test(lines[index])) {
+        tableLines.push(lines[index]);
+        index += 1;
+      }
+      index -= 1;
+      html.push(tableHtml(tableLines));
+      continue;
+    }
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
+    if (heading) {
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items = [];
+      while (index < lines.length && /^\s*[-*]\s+/.test(lines[index])) {
+        items.push(`<li>${inlineMarkdown(lines[index].replace(/^\s*[-*]\s+/, ''))}</li>`);
+        index += 1;
+      }
+      index -= 1;
+      html.push(`<ul>${items.join('')}</ul>`);
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items = [];
+      while (index < lines.length && /^\s*\d+\.\s+/.test(lines[index])) {
+        items.push(`<li>${inlineMarkdown(lines[index].replace(/^\s*\d+\.\s+/, ''))}</li>`);
+        index += 1;
+      }
+      index -= 1;
+      html.push(`<ol>${items.join('')}</ol>`);
+      continue;
+    }
+    html.push(`<p>${inlineMarkdown(line)}</p>`);
+  }
+  return html.join('');
+}
+
+function renderTaskResultText() {
+  const body = $('taskResultBody');
+  body.innerHTML = activeTaskText.trim()
+    ? renderMarkdownLite(activeTaskText)
+    : '<div class="result-placeholder">Waiting for SafeClaw...</div>';
+  body.scrollTop = body.scrollHeight;
 }
 
 function isActiveTaskPayload(payload) {
@@ -211,9 +310,8 @@ function isActiveTaskPayload(payload) {
 }
 
 function appendTaskResult(text) {
-  const body = $('taskResultBody');
-  body.textContent += text;
-  body.scrollTop = body.scrollHeight;
+  activeTaskText += text;
+  renderTaskResultText();
 }
 
 function renderTaskProviderError(event) {
@@ -221,7 +319,8 @@ function renderTaskProviderError(event) {
   const fix = event.code === 'insufficient_quota' || event.error_type === 'insufficient_quota'
     ? '\n\nFix: check OpenAI API billing/quota at https://platform.openai.com/settings/organization/billing/overview'
     : '';
-  $('taskResultBody').textContent = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  activeTaskText = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  renderTaskResultText();
   setTaskResultState('Failed', 'error');
   setStatus('Provider error', 'error');
 }
@@ -235,8 +334,9 @@ function handleTaskEvent(event) {
   if (event.type === 'assistant_delta') {
     appendTaskResult(event.content || '');
   }
-  if (event.type === 'assistant_message' && !$('taskResultBody').textContent.trim()) {
-    $('taskResultBody').textContent = event.content || '';
+  if (event.type === 'assistant_message' && !activeTaskText.trim()) {
+    activeTaskText = event.content || '';
+    renderTaskResultText();
   }
   if (event.type === 'provider_error') {
     renderTaskProviderError(event);
@@ -250,8 +350,9 @@ function handleTaskEvent(event) {
     setTaskResultState('Needs approval', 'running');
   }
   if (event.type === 'task_done') {
-    if (!$('taskResultBody').textContent.trim()) {
-      $('taskResultBody').textContent = event.content || '';
+    if (!activeTaskText.trim()) {
+      activeTaskText = event.content || '';
+      renderTaskResultText();
     }
     setTaskResultState('Done', 'ok');
     setStatus('Done', 'ok');

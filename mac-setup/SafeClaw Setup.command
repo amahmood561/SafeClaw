@@ -191,7 +191,7 @@ if dialog_yes_no "Configure WhatsApp/Twilio now?" "No"; then
   TWILIO_ACCOUNT_SID_VALUE="$(dialog_text "Twilio Account SID" "")"
   TWILIO_AUTH_TOKEN_VALUE="$(dialog_secret "Twilio Auth Token")"
   TWILIO_WHATSAPP_FROM_VALUE="$(dialog_text "Twilio WhatsApp From number" "$DEFAULT_TWILIO_FROM")"
-  SAFECLAW_ALLOWED_SENDERS_VALUE="$(dialog_text "Allowed WhatsApp sender numbers, comma-separated. Example: whatsapp:+15551234567" "")"
+  SAFECLAW_ALLOWED_SENDERS_VALUE="$(dialog_text "Allowed WhatsApp sender numbers, comma-separated. Example: whatsapp:+15612367203" "")"
 fi
 
 info "Installing SafeClaw"

@@ -120,6 +120,19 @@ function listSessionFiles(settings = {}) {
     .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
 }
 
+function parseEnvFile(envPath) {
+  if (!fs.existsSync(envPath)) {
+    return {};
+  }
+  const values = {};
+  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    if (!line || line.startsWith('#') || !line.includes('=')) continue;
+    const [key, ...rest] = line.split('=');
+    values[key.trim()] = rest.join('=').trim();
+  }
+  return values;
+}
+
 function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
@@ -173,24 +186,18 @@ ipcMain.handle('defaults', () => DEFAULTS);
 
 ipcMain.handle('load-env', (_event, installDir) => {
   const envPath = path.join(installDir, '.env');
-  if (!fs.existsSync(envPath)) {
-    return {};
-  }
-  const values = {};
-  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    if (!line || line.startsWith('#') || !line.includes('=')) continue;
-    const [key, ...rest] = line.split('=');
-    values[key.trim()] = rest.join('=').trim();
-  }
-  return values;
+  return parseEnvFile(envPath);
 });
 
 ipcMain.handle('save-env', (_event, settings) => {
   fs.mkdirSync(settings.installDir, { recursive: true });
   const envPath = path.join(settings.installDir, '.env');
+  const existing = parseEnvFile(envPath);
+  const apiKey = settings.apiKey || existing.OPENAI_API_KEY || '';
+  const twilioToken = settings.twilioToken || existing.TWILIO_AUTH_TOKEN || '';
   const content = [
     '# Use OpenAI-compatible API endpoint',
-    `OPENAI_API_KEY=${settings.apiKey || ''}`,
+    `OPENAI_API_KEY=${apiKey}`,
     `OPENAI_BASE_URL=${settings.baseUrl || DEFAULTS.baseUrl}`,
     `OPENAI_MODEL=${settings.model || DEFAULTS.model}`,
     '',
@@ -206,7 +213,7 @@ ipcMain.handle('save-env', (_event, settings) => {
     '',
     '# Optional Twilio WhatsApp outbound support.',
     `TWILIO_ACCOUNT_SID=${settings.twilioSid || ''}`,
-    `TWILIO_AUTH_TOKEN=${settings.twilioToken || ''}`,
+    `TWILIO_AUTH_TOKEN=${twilioToken}`,
     `TWILIO_WHATSAPP_FROM=${settings.twilioFrom || 'whatsapp:+14155238886'}`,
     `SAFECLAW_ALLOWED_SENDERS=${settings.allowedSenders || ''}`,
     '',

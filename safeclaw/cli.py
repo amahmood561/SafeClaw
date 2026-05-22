@@ -27,10 +27,31 @@ from .service import (
 )
 from .tools import available_tools
 from .config import WORKSPACE
+from .llm import LLMError
 from .whatsapp import serve_whatsapp, whatsapp_setup_status
 
 app = typer.Typer(help="SafeClaw: a self-hosted agent with explicit permissions")
 console = Console()
+
+
+def _provider_error_payload(exc: LLMError) -> dict[str, str | int | None]:
+    return {
+        "type": "provider_error",
+        "message": str(exc),
+        "error_type": exc.error_type,
+        "code": exc.code,
+        "status_code": exc.status_code,
+    }
+
+
+def _print_provider_error(exc: LLMError, events: bool = False) -> None:
+    payload = _provider_error_payload(exc)
+    if events:
+        emit_event(payload)
+    console.print("[red]Provider error[/red]")
+    console.print(str(exc))
+    if exc.code == "insufficient_quota" or exc.error_type == "insufficient_quota":
+        console.print("Fix: check OpenAI API billing and quota at https://platform.openai.com/settings/organization/billing/overview")
 
 @app.command()
 def run(task: str, session: str = "default", model: str = "", permission_profile: str = "", events: bool = False):
@@ -49,8 +70,12 @@ def run(task: str, session: str = "default", model: str = "", permission_profile
             **kwargs,
         )
         console.print(result)
+    except LLMError as exc:
+        _print_provider_error(exc, events=events)
+        raise typer.Exit(1)
     except Exception as exc:
         console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
 
 @app.command()
 def chat(session: str = "default", model: str = "", permission_profile: str = ""):

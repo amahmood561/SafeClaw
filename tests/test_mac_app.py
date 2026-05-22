@@ -117,6 +117,11 @@ def test_electron_chat_fluidity_features_are_wired():
         "renderApprovalCard",
         "handleStructuredEvent",
         "splitEventLines",
+        "provider_error",
+        "Provider error",
+        "billing/quota",
+        "extractLegacyProviderError",
+        "providerErrorActive",
         "setMessageState",
         "result-block",
         "--events",
@@ -131,6 +136,20 @@ def test_electron_chat_fluidity_features_are_wired():
         "Huge file warning",
     ]:
         assert text in renderer + styles
+
+
+def test_electron_setup_preserves_and_auto_saves_secrets():
+    main = MAIN_JS.read_text()
+    renderer = RENDERER_JS.read_text()
+    html = INDEX_HTML.read_text()
+
+    assert "parseEnvFile" in main
+    assert "settings.apiKey || existing.OPENAI_API_KEY" in main
+    assert "settings.twilioToken || existing.TWILIO_AUTH_TOKEN" in main
+    assert "saveConfigAfterInstall" in renderer
+    assert "payload.id === 'install'" in renderer
+    assert "saveEnv().then(loadEnv)" in renderer
+    assert "Install / Update also saves this setup" in html
 
 
 def test_readme_references_mac_app_screenshots():

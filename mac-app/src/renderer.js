@@ -30,6 +30,8 @@ let lastChatPrompt = '';
 let chatAttachments = [];
 let lastMemoryTarget = '';
 let eventLineBuffer = '';
+let saveConfigAfterInstall = false;
+let providerErrorActive = false;
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -225,6 +227,9 @@ function handleStructuredEvent(event) {
   if (event.type === 'tool_error' && activeChatResponse) {
     addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
   }
+  if (event.type === 'provider_error' && activeChatResponse) {
+    renderProviderError(event);
+  }
   if (event.type === 'approval_required') {
     renderApprovalCard(event.tool || 'Action approval', event.subject || event.arguments_preview || '', event);
   }
@@ -234,6 +239,38 @@ function handleStructuredEvent(event) {
   if (event.type === 'task_done') {
     setStatus('Done', 'ok');
     if (activeChatItem) setMessageState(activeChatItem, 'done');
+  }
+}
+
+function renderProviderError(event) {
+  if (!activeChatResponse) return;
+  providerErrorActive = true;
+  const fix = event.code === 'insufficient_quota' || event.error_type === 'insufficient_quota'
+    ? '\n\nFix: check OpenAI API billing/quota at https://platform.openai.com/settings/organization/billing/overview'
+    : '';
+  activeChatResponse.textContent = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  if (activeChatItem) setMessageState(activeChatItem, 'failed');
+  setStatus('Provider error', 'error');
+}
+
+function extractLegacyProviderError(text) {
+  const marker = 'Error:';
+  const index = text.indexOf(marker);
+  if (index === -1) return null;
+  const raw = text.slice(index + marker.length).trim();
+  if (!raw.startsWith('{')) return { message: raw };
+  try {
+    const payload = JSON.parse(raw);
+    const error = payload.error || {};
+    return {
+      type: 'provider_error',
+      message: error.message || raw,
+      error_type: error.type || null,
+      code: error.code || null,
+      status_code: null,
+    };
+  } catch (_error) {
+    return { type: 'provider_error', message: raw };
   }
 }
 
@@ -522,6 +559,7 @@ async function sendChat() {
   activeChatItem = assistantMessage.item;
   activeChatResponse = assistantMessage.body;
   activeChatHadEvents = false;
+  providerErrorActive = false;
   setStatus('Chatting', 'running');
   const result = await window.safeclaw.command(settings(), chatArgs('run', [prompt]), 'Chat');
   if (!result.ok) {
@@ -543,8 +581,12 @@ function bindEvents() {
   $('installBtn').addEventListener('click', async () => {
     showView('logs');
     setStatus('Installing', 'running');
+    saveConfigAfterInstall = true;
     const result = await window.safeclaw.install(settings());
-    if (!result.ok) appendOutput(`Error: ${result.error}\n`);
+    if (!result.ok) {
+      saveConfigAfterInstall = false;
+      appendOutput(`Error: ${result.error}\n`);
+    }
   });
 
   $('saveConfigBtn').addEventListener('click', saveEnv);
@@ -677,24 +719,45 @@ function bindEvents() {
         }
       }
       eventLineBuffer = '';
-      setStatus(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
-      if (activeChatItem) setMessageState(activeChatItem, payload.code === 0 ? 'done' : 'failed');
+      if (!providerErrorActive) {
+        setStatus(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
+        if (activeChatItem) setMessageState(activeChatItem, payload.code === 0 ? 'done' : 'failed');
+      }
       refreshSessions();
+      if (payload.id === 'install' && saveConfigAfterInstall) {
+        saveConfigAfterInstall = false;
+        if (payload.code === 0) {
+          saveEnv().then(loadEnv).catch((error) => appendOutput(`Config save failed: ${error.message}\n`));
+        } else {
+          appendOutput('Install failed, so config was not saved.\n');
+        }
+      }
     }
     if (activeChatResponse && payload.type === 'stdout' && visibleText && !activeChatHadEvents) {
-      activeChatResponse.textContent += visibleText;
-      detectApproval(visibleText);
+      const providerError = extractLegacyProviderError(visibleText);
+      if (providerError) {
+        renderProviderError(providerError);
+      } else {
+        activeChatResponse.textContent += visibleText;
+        detectApproval(visibleText);
+      }
       $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
     }
     if (activeChatResponse && ['stderr', 'error'].includes(payload.type) && visibleText) {
-      addResultBlock(activeChatResponse, payload.type === 'stderr' ? 'stderr' : 'error', visibleText);
-      detectApproval(visibleText);
+      const providerError = extractLegacyProviderError(visibleText);
+      if (providerError) {
+        renderProviderError(providerError);
+      } else {
+        addResultBlock(activeChatResponse, payload.type === 'stderr' ? 'stderr' : 'error', visibleText);
+        detectApproval(visibleText);
+      }
       $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
     }
     if (activeChatResponse && payload.type === 'exit') {
       activeChatResponse = null;
       activeChatItem = null;
       activeChatHadEvents = false;
+      providerErrorActive = false;
     }
     if (visibleText || payload.type === 'start' || payload.type === 'exit') {
       appendOutput(visibleText || payload.text);

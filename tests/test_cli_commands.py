@@ -2,6 +2,7 @@ from typer.testing import CliRunner
 
 from safeclaw import cli
 from safeclaw.doctor import Check
+from safeclaw.llm import LLMError
 
 
 runner = CliRunner()
@@ -90,6 +91,26 @@ def test_run_command_can_emit_structured_events(monkeypatch):
     assert "SAFECLAW_EVENT" in result.stderr
     assert '"type": "task_done"' in result.stderr
     assert calls["event_callback"] is not None
+
+
+def test_run_command_provider_error_exits_nonzero(monkeypatch):
+    def fake_run_task(*_args, **_kwargs):
+        raise LLMError(
+            "You exceeded your current quota.",
+            error_type="insufficient_quota",
+            code="insufficient_quota",
+            status_code=429,
+        )
+
+    monkeypatch.setattr(cli, "run_task", fake_run_task)
+    result = invoke("run", "hello", "--events")
+
+    assert result.exit_code == 1
+    assert "Provider error" in result.output
+    assert "You exceeded your current quota" in result.output
+    assert "billing" in result.output
+    assert "SAFECLAW_EVENT" in result.stderr
+    assert '"type": "provider_error"' in result.stderr
 
 
 def test_chat_command_handles_memory_reset_and_task(monkeypatch):

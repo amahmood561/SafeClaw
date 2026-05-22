@@ -73,6 +73,25 @@ def test_run_command_calls_agent(monkeypatch):
     }
 
 
+def test_run_command_can_emit_structured_events(monkeypatch):
+    calls = {}
+
+    def fake_run_task(task, session_id="default", model=None, permission_profile=None, interactive=True, event_callback=None):
+        calls.update(event_callback=event_callback)
+        if event_callback:
+            event_callback({"type": "task_done", "session": session_id, "content": "ok"})
+        return "task-result"
+
+    monkeypatch.setattr(cli, "run_task", fake_run_task)
+    result = invoke("run", "hello", "--session", "s1", "--events")
+
+    assert result.exit_code == 0
+    assert "task-result" in result.output
+    assert "SAFECLAW_EVENT" in result.stderr
+    assert '"type": "task_done"' in result.stderr
+    assert calls["event_callback"] is not None
+
+
 def test_chat_command_handles_memory_reset_and_task(monkeypatch):
     calls = []
 

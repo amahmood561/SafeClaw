@@ -1,9 +1,10 @@
 import json
+import sys
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from .config import MAX_TOOL_STEPS, MODEL, WORKSPACE
-from .llm import complete_message
+from .llm import complete_message, complete_message_stream
 from .sessions import auto_compact_session, forget_memory, load_session, recall, remember, save_session, search_memory, session_status
 from .tools import TOOL_SPECS, available_tools, list_files, run_tool
 
@@ -62,14 +63,27 @@ SESSION_TOOL_SPECS: list[dict[str, Any]] = [
     },
 ]
 
+EventCallback = Callable[[dict[str, Any]], None]
+
+
+def emit_event(event: dict[str, Any]) -> None:
+    print(f"SAFECLAW_EVENT {json.dumps(event, default=str)}", file=sys.stderr, flush=True)
+
 
 def _tool_message(
     session_id: str,
     tool_call: dict[str, Any],
     permission_profile: str | None = None,
     interactive: bool = True,
+    event_callback: EventCallback | None = None,
 ) -> dict[str, str]:
     name = tool_call["function"]["name"]
+    if event_callback:
+        event_callback({
+            "type": "tool_call",
+            "tool": name,
+            "arguments": tool_call["function"].get("arguments") or "{}",
+        })
     try:
         arguments = json.loads(tool_call["function"].get("arguments") or "{}")
     except json.JSONDecodeError as exc:
@@ -87,6 +101,12 @@ def _tool_message(
             result = json.dumps(session_status(session_id), indent=2)
         else:
             result = run_tool(name, arguments, permission_profile=permission_profile, interactive=interactive)
+    if event_callback:
+        event_callback({
+            "type": "tool_message",
+            "tool": name,
+            "content": result,
+        })
     return {
         "role": "tool",
         "tool_call_id": tool_call["id"],
@@ -101,6 +121,7 @@ def run_task(
     model: str | None = None,
     permission_profile: str | None = None,
     interactive: bool = True,
+    event_callback: EventCallback | None = None,
 ) -> str:
     session = load_session(session_id)
     if model:
@@ -126,6 +147,14 @@ User task:
 {task}
 """
     session["messages"].append({"role": "user", "content": context})
+    used_tools = False
+    if event_callback:
+        event_callback({
+            "type": "task_started",
+            "session": session_id,
+            "model": active_model,
+            "permission_profile": active_profile or "readonly",
+        })
 
     for _ in range(MAX_TOOL_STEPS):
         message = complete_message(session["messages"], tools=TOOL_SPECS + SESSION_TOOL_SPECS, model=active_model)
@@ -133,7 +162,27 @@ User task:
         tool_calls = message.get("tool_calls") or []
         if not tool_calls:
             result = message.get("content", "")
+            if event_callback and result:
+                if used_tools:
+                    # After tool execution, ask for the final answer as a streamed synthesis.
+                    stream_messages = session["messages"][:-1]
+                    result_parts: list[str] = []
+                    event_callback({"type": "assistant_stream_start"})
+                    try:
+                        for delta in complete_message_stream(stream_messages, model=active_model):
+                            result_parts.append(delta)
+                            event_callback({"type": "assistant_delta", "content": delta})
+                    except Exception as exc:
+                        event_callback({"type": "assistant_stream_error", "content": str(exc)})
+                    streamed = "".join(result_parts).strip()
+                    if streamed:
+                        result = streamed
+                        session["messages"][-1]["content"] = result
+                    event_callback({"type": "assistant_message", "content": result})
+                else:
+                    event_callback({"type": "assistant_message", "content": result})
             break
+        used_tools = True
         for tool_call in tool_calls:
             session["messages"].append(
                 _tool_message(
@@ -141,6 +190,7 @@ User task:
                     tool_call,
                     permission_profile=active_profile,
                     interactive=interactive,
+                    event_callback=event_callback,
                 )
             )
     else:
@@ -152,6 +202,8 @@ User task:
     (logs / f"task-{stamp}.md").write_text(f"# Task\n\n{task}\n\n# Result\n\n{result}\n")
     auto_compact_session(session)
     save_session(session)
+    if event_callback:
+        event_callback({"type": "task_done", "session": session_id, "content": result})
     return result
 
 

@@ -107,6 +107,7 @@ def test_electron_chat_fluidity_features_are_wired():
 
     for text in ["list-sessions", "rename-session", "delete-session", "approve-command"]:
         assert text in main
+    assert "SAFECLAW_EVENT_STREAM" in main
 
     for text in ["sessions", "renameSession", "deleteSession", "approve"]:
         assert text in preload
@@ -114,8 +115,11 @@ def test_electron_chat_fluidity_features_are_wired():
     for text in [
         "refreshSessions",
         "renderApprovalCard",
+        "handleStructuredEvent",
+        "splitEventLines",
         "setMessageState",
         "result-block",
+        "--events",
         "queued",
         "needs approval",
         "failed",

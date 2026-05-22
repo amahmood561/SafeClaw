@@ -51,6 +51,30 @@ def test_permission_profiles_block_and_allow_write():
     assert "Wrote test-permissions.txt" in allowed
 
 
+def test_structured_approval_events(monkeypatch, capsys):
+    monkeypatch.setenv("SAFECLAW_EVENT_STREAM", "true")
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "n")
+
+    denied = run_tool(
+        "write_file",
+        {"path": "approval-event.txt", "content": "blocked"},
+        permission_profile="workspace-write",
+        approval_mode="ask",
+        interactive=True,
+    )
+
+    assert "Denied by user" in denied
+    events = [
+        json.loads(line.removeprefix("SAFECLAW_EVENT "))
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("SAFECLAW_EVENT ")
+    ]
+    assert events[0]["type"] == "approval_required"
+    assert events[0]["tool"] == "write_file"
+    assert events[0]["reason"]
+    assert events[-1] == {"type": "tool_blocked", "tool": "write_file", "profile": "workspace-write", "reason": "Denied by user: write_file"}
+
+
 def test_search_edit_and_backup_flow():
     assert "Wrote test-edit.txt" in run_tool(
         "write_file",

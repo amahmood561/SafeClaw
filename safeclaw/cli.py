@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from .agent import run_task
+from .agent import emit_event, run_task
 from .database import describe_database, describe_table, list_databases, run_readonly_query, test_database
 from .doctor import doctor_summary, run_doctor
 from .sessions import (
@@ -33,16 +33,20 @@ app = typer.Typer(help="SafeClaw: a self-hosted agent with explicit permissions"
 console = Console()
 
 @app.command()
-def run(task: str, session: str = "default", model: str = "", permission_profile: str = ""):
+def run(task: str, session: str = "default", model: str = "", permission_profile: str = "", events: bool = False):
     """Run one task."""
     console.print(Panel.fit("SafeClaw", subtitle=str(WORKSPACE)))
     try:
+        kwargs = {}
+        if events:
+            kwargs["event_callback"] = emit_event
         result = run_task(
             task,
             session_id=session,
             model=model or None,
             permission_profile=permission_profile or None,
             interactive=True,
+            **kwargs,
         )
         console.print(result)
     except Exception as exc:

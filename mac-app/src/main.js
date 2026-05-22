@@ -65,6 +65,7 @@ function safeclawBin(installDir) {
 function commandEnv(installDir) {
   return {
     ...process.env,
+    SAFECLAW_EVENT_STREAM: 'true',
     PATH: `${path.join(installDir, '.venv', 'bin')}:/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ''}`,
   };
 }

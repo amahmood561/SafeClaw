@@ -10,8 +10,8 @@
     "build:mac": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --dir"
   },
   "devDependencies": {
-    "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1"
   },
   "build": {
     "appId": "com.safeclaw.app",

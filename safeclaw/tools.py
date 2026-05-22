@@ -1,4 +1,5 @@
 import html
+import json
 import os
 import re
 import subprocess
@@ -31,6 +32,7 @@ SHELL_TOOLS = {"shell"}
 MESSAGING_TOOLS = {"send_whatsapp"}
 DATABASE_TOOLS = {"list_databases", "test_database", "describe_database", "describe_table", "run_readonly_query"}
 RISKY_TOOLS = WRITE_TOOLS | NETWORK_TOOLS | SHELL_TOOLS | MESSAGING_TOOLS
+EVENT_PREFIX = "SAFECLAW_EVENT "
 
 PROFILE_CAPABILITIES = {
     "readonly": READ_TOOLS,
@@ -84,6 +86,44 @@ def _preview_arguments(arguments: dict[str, Any], limit: int = 500) -> str:
     return text[:limit] + ("..." if len(text) > limit else "")
 
 
+def _event_stream_enabled() -> bool:
+    return os.getenv("SAFECLAW_EVENT_STREAM", "").lower() in {"1", "true", "yes"}
+
+
+def _emit_event(event: dict[str, Any]) -> None:
+    if not _event_stream_enabled():
+        return
+    print(f"{EVENT_PREFIX}{json.dumps(event, default=str)}", file=sys.stderr, flush=True)
+
+
+def _approval_subject(tool_name: str, arguments: dict[str, Any]) -> str:
+    if tool_name == "shell":
+        return str(arguments.get("command", ""))
+    if tool_name in {"write_file", "edit_file", "read_file"}:
+        return str(arguments.get("path", ""))
+    if tool_name == "apply_patch":
+        return _preview_arguments({"patch": arguments.get("patch", "")}, limit=700)
+    if tool_name == "fetch_url":
+        return str(arguments.get("url", ""))
+    if tool_name == "web_search":
+        return str(arguments.get("query", ""))
+    if tool_name == "send_whatsapp":
+        return f"{arguments.get('to', '')}: {str(arguments.get('body', ''))[:160]}"
+    return _preview_arguments(arguments)
+
+
+def _approval_reason(tool_name: str) -> str:
+    if tool_name in WRITE_TOOLS:
+        return "This action can change files in the workspace."
+    if tool_name in SHELL_TOOLS:
+        return "This action can execute a shell command on this machine."
+    if tool_name in NETWORK_TOOLS:
+        return "This action can fetch data from the network."
+    if tool_name in MESSAGING_TOOLS:
+        return "This action can send a WhatsApp message outside this machine."
+    return "This action requires explicit approval."
+
+
 def _approval_required(tool_name: str, profile: str, approval_mode: str) -> bool:
     if approval_mode == "auto":
         return False
@@ -99,15 +139,26 @@ def _ask_approval(tool_name: str, arguments: dict[str, Any], profile: str, appro
         return None
     if not interactive:
         return f"Blocked: {tool_name} requires interactive approval."
-    if not sys.stdin.isatty():
+    if not sys.stdin.isatty() and not _event_stream_enabled():
         return f"Blocked: {tool_name} requires terminal approval."
+    _emit_event({
+        "type": "approval_required",
+        "tool": tool_name,
+        "profile": profile,
+        "approval_mode": approval_mode,
+        "reason": _approval_reason(tool_name),
+        "subject": _approval_subject(tool_name, arguments),
+        "arguments_preview": _preview_arguments(arguments),
+    })
     print("\nSafeClaw approval required", file=sys.stderr)
     print(f"Tool: {tool_name}", file=sys.stderr)
     print(f"Profile: {profile}", file=sys.stderr)
     print(f"Args: {_preview_arguments(arguments)}", file=sys.stderr)
     answer = input("Allow this action? [y/N] ").strip().lower()
     if answer not in {"y", "yes"}:
+        _emit_event({"type": "approval_decision", "tool": tool_name, "decision": "denied"})
         return f"Denied by user: {tool_name}"
+    _emit_event({"type": "approval_decision", "tool": tool_name, "decision": "allowed"})
     return None
 
 
@@ -548,14 +599,21 @@ def run_tool(
     profile = _normal_profile(permission_profile)
     blocked = _permission_error(name, profile)
     if blocked:
+        _emit_event({"type": "tool_blocked", "tool": name, "profile": profile, "reason": blocked})
         return blocked
     approval = _ask_approval(name, arguments, profile, approval_mode or APPROVAL_MODE, interactive)
     if approval:
+        _emit_event({"type": "tool_blocked", "tool": name, "profile": profile, "reason": approval})
         return approval
     try:
-        return str(functions[name](**arguments))
+        _emit_event({"type": "tool_started", "tool": name, "arguments_preview": _preview_arguments(arguments)})
+        result = str(functions[name](**arguments))
+        _emit_event({"type": "tool_result", "tool": name, "content": _trim_output(result, 3000)})
+        return result
     except Exception as exc:
-        return f"Tool error in {name}: {exc}"
+        result = f"Tool error in {name}: {exc}"
+        _emit_event({"type": "tool_error", "tool": name, "content": result})
+        return result
 
 
 def available_tools() -> str:

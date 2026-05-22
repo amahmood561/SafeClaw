@@ -25,9 +25,11 @@ const viewTitles = {
 
 let activeChatResponse = null;
 let activeChatItem = null;
+let activeChatHadEvents = false;
 let lastChatPrompt = '';
 let chatAttachments = [];
 let lastMemoryTarget = '';
+let eventLineBuffer = '';
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -137,6 +139,7 @@ function chatArgs(command, extra = []) {
   const model = $('chatModel').value.trim();
   const permission = $('chatPermission').value;
   const args = [command, ...extra, '--session', session];
+  if (command === 'run') args.push('--events');
   if (model && ['run', 'chat'].includes(command)) args.push('--model', model);
   if (permission && ['run', 'chat', 'session-config'].includes(command)) args.push('--permission-profile', permission);
   return args;
@@ -178,6 +181,60 @@ function addResultBlock(parent, type, text) {
   parent.appendChild(block);
   $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
   return block;
+}
+
+function splitEventLines(text) {
+  const combined = eventLineBuffer + text;
+  const lines = combined.split(/\r?\n/);
+  eventLineBuffer = lines.pop() || '';
+  const events = [];
+  const visible = [];
+  for (const line of lines) {
+    if (line.startsWith('SAFECLAW_EVENT ')) {
+      try {
+        events.push(JSON.parse(line.slice('SAFECLAW_EVENT '.length)));
+      } catch (_error) {
+        visible.push(line);
+      }
+    } else {
+      visible.push(line);
+    }
+  }
+  return { events, visibleText: visible.length ? `${visible.join('\n')}\n` : '' };
+}
+
+function handleStructuredEvent(event) {
+  if (!event || !event.type) return;
+  if (event.type === 'task_started') {
+    setStatus('Running', 'running');
+    if (activeChatItem) setMessageState(activeChatItem, 'running');
+  }
+  if (event.type === 'assistant_delta' && activeChatResponse) {
+    activeChatResponse.textContent += event.content || '';
+    $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
+  }
+  if (event.type === 'assistant_message' && activeChatResponse && !activeChatResponse.textContent.trim()) {
+    activeChatResponse.textContent = event.content || '';
+  }
+  if (event.type === 'tool_call' && activeChatResponse) {
+    addResultBlock(activeChatResponse, 'tool', `Tool call: ${event.tool}\n${event.arguments || ''}`);
+  }
+  if (event.type === 'tool_result' && activeChatResponse) {
+    addResultBlock(activeChatResponse, 'tool', `Tool result: ${event.tool}\n${event.content || ''}`);
+  }
+  if (event.type === 'tool_error' && activeChatResponse) {
+    addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
+  }
+  if (event.type === 'approval_required') {
+    renderApprovalCard(event.tool || 'Action approval', event.subject || event.arguments_preview || '', event);
+  }
+  if (event.type === 'approval_decision' && activeChatItem) {
+    setMessageState(activeChatItem, event.decision === 'allowed' ? 'running' : 'stopped');
+  }
+  if (event.type === 'task_done') {
+    setStatus('Done', 'ok');
+    if (activeChatItem) setMessageState(activeChatItem, 'done');
+  }
 }
 
 function formatBytes(bytes) {
@@ -368,7 +425,7 @@ function currentSessionArgs(command, extra = []) {
   return [command, ...extra, '--session', chatSessionId()];
 }
 
-function renderApprovalCard(kind, detail) {
+function renderApprovalCard(kind, detail, event = {}) {
   const tray = $('approvalTray');
   tray.hidden = false;
   tray.innerHTML = '';
@@ -377,8 +434,12 @@ function renderApprovalCard(kind, detail) {
   card.innerHTML = `
     <span class="tag">Needs approval</span>
     <h3>${kind}</h3>
-    <p>${detail}</p>
-    <pre>${detail}</pre>
+    <p>${event.reason || 'SafeClaw needs approval before continuing.'}</p>
+    <pre>${[
+      event.subject ? `Subject: ${event.subject}` : detail,
+      event.profile ? `Profile: ${event.profile}` : '',
+      event.arguments_preview ? `Args: ${event.arguments_preview}` : '',
+    ].filter(Boolean).join('\n')}</pre>
   `;
   const actions = document.createElement('div');
   actions.className = 'button-row wrap';
@@ -460,6 +521,7 @@ async function sendChat() {
   const assistantMessage = addChatMessage('assistant', '', 'running');
   activeChatItem = assistantMessage.item;
   activeChatResponse = assistantMessage.body;
+  activeChatHadEvents = false;
   setStatus('Chatting', 'running');
   const result = await window.safeclaw.command(settings(), chatArgs('run', [prompt]), 'Chat');
   if (!result.ok) {
@@ -598,27 +660,45 @@ function bindEvents() {
   $('openLogsBtn').addEventListener('click', () => window.safeclaw.openLogs());
 
   window.safeclaw.onOutput((payload) => {
+    const parsed = splitEventLines(payload.text || '');
+    parsed.events.forEach((event) => {
+      activeChatHadEvents = true;
+      handleStructuredEvent(event);
+    });
+    const visibleText = parsed.visibleText;
     if (payload.type === 'start') setStatus('Running', 'running');
     if (payload.type === 'exit') {
+      if (eventLineBuffer.startsWith('SAFECLAW_EVENT ')) {
+        try {
+          activeChatHadEvents = true;
+          handleStructuredEvent(JSON.parse(eventLineBuffer.slice('SAFECLAW_EVENT '.length)));
+        } catch (_error) {
+          appendOutput(`${eventLineBuffer}\n`);
+        }
+      }
+      eventLineBuffer = '';
       setStatus(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
       if (activeChatItem) setMessageState(activeChatItem, payload.code === 0 ? 'done' : 'failed');
       refreshSessions();
     }
-    if (activeChatResponse && payload.type === 'stdout') {
-      activeChatResponse.textContent += payload.text;
-      detectApproval(payload.text);
+    if (activeChatResponse && payload.type === 'stdout' && visibleText && !activeChatHadEvents) {
+      activeChatResponse.textContent += visibleText;
+      detectApproval(visibleText);
       $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
     }
-    if (activeChatResponse && ['stderr', 'error'].includes(payload.type)) {
-      addResultBlock(activeChatResponse, payload.type === 'stderr' ? 'stderr' : 'error', payload.text);
-      detectApproval(payload.text);
+    if (activeChatResponse && ['stderr', 'error'].includes(payload.type) && visibleText) {
+      addResultBlock(activeChatResponse, payload.type === 'stderr' ? 'stderr' : 'error', visibleText);
+      detectApproval(visibleText);
       $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
     }
     if (activeChatResponse && payload.type === 'exit') {
       activeChatResponse = null;
       activeChatItem = null;
+      activeChatHadEvents = false;
     }
-    appendOutput(payload.text);
+    if (visibleText || payload.type === 'start' || payload.type === 'exit') {
+      appendOutput(visibleText || payload.text);
+    }
   });
 }
 

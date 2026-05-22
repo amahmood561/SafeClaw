@@ -1,3 +1,5 @@
+import json
+
 import requests
 from .config import API_KEY, BASE_URL, MODEL
 
@@ -31,6 +33,41 @@ def complete_message(messages, tools=None, model=None):
     if response.status_code >= 400:
         raise LLMError(response.text)
     return response.json()["choices"][0]["message"]
+
+
+def complete_message_stream(messages, model=None):
+    if not API_KEY or API_KEY == "your_key_here":
+        raise LLMError("Missing OPENAI_API_KEY. Add it to your .env file.")
+
+    payload = {
+        "model": model or MODEL,
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        "temperature": 0.2,
+        "stream": True,
+    }
+    with requests.post(
+        f"{BASE_URL}/chat/completions",
+        headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+        json=payload,
+        timeout=60,
+        stream=True,
+    ) as response:
+        if response.status_code >= 400:
+            raise LLMError(response.text)
+        for line in response.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data: "):
+                continue
+            data = line[6:]
+            if data == "[DONE]":
+                break
+            try:
+                payload = json.loads(data)
+            except Exception:
+                continue
+            delta = payload.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content")
+            if content:
+                yield content
 
 
 def complete(messages):

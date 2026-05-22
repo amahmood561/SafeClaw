@@ -568,6 +568,11 @@ body.dragging-chat .chat-drop-zone {
   background: #3f3014;
 }
 
+.result-block.tool {
+  color: #e7f3ff;
+  background: #102638;
+}
+
 .result-block.error {
   color: #ffe9e9;
   background: #4a1717;

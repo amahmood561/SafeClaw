@@ -8,22 +8,22 @@ smoother file/link workflows.
 
 ### Highest Impact
 
-- [ ] Streaming responses with partial output, stop, retry, failed, and done states.
-- [ ] Approval cards inside chat for file writes, patches, shell commands, network fetches, and WhatsApp sends.
-- [ ] Clean result rendering so assistant text, command output, diffs, errors, and file references are visually separate.
-- [ ] Attachment preview drawer for dropped files and links.
+- [x] Streaming responses with partial output, stop, retry, failed, and done states.
+- [x] Approval cards inside chat for file writes, patches, shell commands, network fetches, and WhatsApp sends when the CLI emits an approval prompt.
+- [x] Clean result rendering so assistant text, command output, diffs, errors, and file references are visually separate.
+- [x] Attachment preview drawer for dropped files and links.
 
 ### Chat Workflow
 
-- [ ] Recent sessions list with timestamps.
-- [ ] Rename, delete, export, and quick-switch sessions.
-- [ ] Starter action chips:
+- [x] Recent sessions list with timestamps.
+- [x] Rename, delete, export, and quick-switch sessions.
+- [x] Starter action chips:
   - Run doctor
   - Explain config
   - Check WhatsApp setup
   - Summarize folder
   - Inspect dropped file
-- [ ] Message lifecycle states:
+- [x] Message lifecycle states:
   - queued
   - running
   - needs approval
@@ -33,27 +33,33 @@ smoother file/link workflows.
 
 ### Attachment UX
 
-- [ ] Whole chat drop overlay with "Drop to attach".
-- [ ] File/link count before send.
-- [ ] Show file name, size, type, and path.
-- [ ] Warn when dropped files are outside the configured workspace.
-- [ ] Let users choose "send as reference" or "include contents".
-- [ ] Warn before including huge files.
+- [x] Whole chat drop overlay with "Drop to attach".
+- [x] File/link count before send.
+- [x] Show file name, size, type, and path.
+- [x] Warn when dropped files are outside the configured workspace.
+- [x] Let users choose "send as reference" or "include contents".
+- [x] Warn before including huge files.
 
 ### Context and Safety
 
-- [ ] Show active workspace above the composer.
-- [ ] Show active model above the composer.
-- [ ] Show active permission profile above the composer.
-- [ ] Show approval mode above the composer.
-- [ ] Add allow once, deny, and always allow for this session buttons for approval cards.
+- [x] Show active workspace above the composer.
+- [x] Show active model above the composer.
+- [x] Show active permission profile above the composer.
+- [x] Show approval mode above the composer.
+- [x] Add allow once, deny, and always allow for this session buttons for approval cards.
 
 ### Memory Controls
 
-- [ ] Remember this.
-- [ ] Forget last message.
-- [ ] Search memory.
-- [ ] Export session.
+- [x] Remember this.
+- [x] Forget last message.
+- [x] Search memory.
+- [x] Export session.
+
+### Remaining Follow-Up
+
+- [ ] Replace approval prompt detection with a structured JSON approval protocol from the CLI.
+- [ ] Add true token streaming from the model layer instead of only streaming process stdout chunks.
+- [ ] Add richer diff/file renderers once the CLI emits structured result events.
 
 ### Implementation Notes
 

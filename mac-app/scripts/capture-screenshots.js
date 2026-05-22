@@ -28,6 +28,14 @@ function registerHandlers() {
   ipcMain.handle('open-logs', () => ({ ok: true }));
   ipcMain.handle('open-url', () => ({ ok: true }));
   ipcMain.handle('open-chat', () => ({ ok: true }));
+  ipcMain.handle('list-sessions', () => ([
+    { id: 'desktop', messages: 8, updatedAt: new Date().toISOString() },
+    { id: 'whatsapp-test', messages: 3, updatedAt: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'project-audit', messages: 12, updatedAt: new Date(Date.now() - 7200000).toISOString() },
+  ]));
+  ipcMain.handle('rename-session', () => ({ ok: true }));
+  ipcMain.handle('delete-session', () => ({ ok: true }));
+  ipcMain.handle('approve-command', () => ({ ok: true }));
   ipcMain.handle('stop-command', () => ({ ok: true }));
 }
 
@@ -63,11 +71,15 @@ async function main() {
 
   await win.webContents.executeJavaScript(`
     document.getElementById('chatMessages').innerHTML = [
-      '<div class="chat-message user"><div class="chat-role">You</div><div class="chat-body">Summarize my SafeClaw setup and tell me what permissions are active.</div></div>',
-      '<div class="chat-message assistant"><div class="chat-role">SafeClaw</div><div class="chat-body">I can inspect the local configuration, session state, and workspace boundaries. Current profile: readonly.</div></div>'
+      '<div class="chat-message user" data-state="done"><div class="chat-role">You <span class="message-state">done</span></div><div class="chat-body">Summarize my SafeClaw setup and tell me what permissions are active.</div></div>',
+      '<div class="chat-message assistant" data-state="running"><div class="chat-role">SafeClaw <span class="message-state">running</span></div><div class="chat-body">I can inspect the local configuration, session state, and workspace boundaries. Current profile: readonly.</div></div>'
     ].join('');
-    document.getElementById('chatAttachments').hidden = false;
-    document.getElementById('chatAttachments').innerHTML = '<div class="attachment-chip file"><span>README.md (42.0 KB)</span><button>Remove</button></div><div class="attachment-chip link"><span>https://safestclaw.com/docs.html</span><button>Remove</button></div>';
+    document.getElementById('attachmentDrawer').open = true;
+    document.getElementById('attachmentCount').textContent = '2';
+    document.getElementById('chatAttachments').innerHTML = [
+      '<div class="attachment-card file"><strong>README.md</strong><div class="attachment-meta">42.0 KB - content preview included</div><div class="attachment-actions"><select><option>Send as reference</option></select><button>Remove</button></div></div>',
+      '<div class="attachment-card link"><strong>https://safestclaw.com/docs.html</strong><div class="attachment-meta">URL attachment</div><div class="attachment-actions"><select disabled><option>Send as reference</option></select><button>Remove</button></div></div>'
+    ].join('');
   `);
 
   await capture(win, 'setup', 'mac-app-setup.png');

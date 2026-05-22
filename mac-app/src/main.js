@@ -69,6 +69,56 @@ function commandEnv(installDir) {
   };
 }
 
+function workspacePath(settings = {}) {
+  const installDir = settings.installDir || DEFAULTS.installDir;
+  const workspace = settings.workspace || DEFAULTS.workspace;
+  const resolved = path.resolve(installDir, workspace);
+  return path.isAbsolute(workspace) ? workspace : resolved;
+}
+
+function safeId(sessionId) {
+  const cleaned = String(sessionId || '')
+    .split('')
+    .map((ch) => /[A-Za-z0-9._-]/.test(ch) ? ch : '_')
+    .join('');
+  return cleaned || 'default';
+}
+
+function sessionFile(settings, sessionId) {
+  return path.join(workspacePath(settings), '.safeclaw_sessions', `${safeId(sessionId)}.json`);
+}
+
+function memoryFile(settings, sessionId) {
+  return path.join(workspacePath(settings), '.safeclaw_memory', `${safeId(sessionId)}.json`);
+}
+
+function listSessionFiles(settings = {}) {
+  const dir = path.join(workspacePath(settings), '.safeclaw_sessions');
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs.readdirSync(dir)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => {
+      const filePath = path.join(dir, name);
+      let data = {};
+      try {
+        data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } catch (_error) {
+        data = {};
+      }
+      const stat = fs.statSync(filePath);
+      return {
+        id: data.id || path.basename(name, '.json'),
+        model: data.model || '',
+        permissionProfile: data.permission_profile || '',
+        messages: Array.isArray(data.messages) ? data.messages.length : 0,
+        updatedAt: data.updated_at || stat.mtime.toISOString(),
+      };
+    })
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+}
+
 function send(channel, payload) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send(channel, payload);
@@ -86,6 +136,7 @@ function runCommand({ id, title, command, args = [], cwd }) {
     cwd,
     env: commandEnv(cwd),
     shell: false,
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
 
   runningProcess.stdout.on('data', (data) => {
@@ -217,6 +268,54 @@ ipcMain.handle('open-chat', (_event, settings) => {
     detached: true,
     stdio: 'ignore',
   }).unref();
+  return { ok: true };
+});
+
+ipcMain.handle('list-sessions', (_event, settings) => {
+  const sessions = listSessionFiles(settings);
+  if (!sessions.some((item) => item.id === 'desktop')) {
+    sessions.unshift({ id: 'desktop', model: '', permissionProfile: '', messages: 0, updatedAt: '' });
+  }
+  return sessions;
+});
+
+ipcMain.handle('rename-session', (_event, settings, oldId, newId) => {
+  const oldPath = sessionFile(settings, oldId);
+  const newPath = sessionFile(settings, newId);
+  if (!newId || !String(newId).trim()) {
+    return { ok: false, error: 'Session name is required.' };
+  }
+  if (!fs.existsSync(oldPath)) {
+    return { ok: false, error: `Session not found: ${oldId}` };
+  }
+  fs.mkdirSync(path.dirname(newPath), { recursive: true });
+  if (fs.existsSync(newPath)) {
+    return { ok: false, error: `Session already exists: ${newId}` };
+  }
+  const data = JSON.parse(fs.readFileSync(oldPath, 'utf8'));
+  data.id = newId;
+  fs.writeFileSync(newPath, JSON.stringify(data, null, 2));
+  fs.unlinkSync(oldPath);
+  const oldMemory = memoryFile(settings, oldId);
+  const newMemory = memoryFile(settings, newId);
+  if (fs.existsSync(oldMemory)) {
+    fs.mkdirSync(path.dirname(newMemory), { recursive: true });
+    fs.renameSync(oldMemory, newMemory);
+  }
+  return { ok: true };
+});
+
+ipcMain.handle('delete-session', (_event, settings, sessionId) => {
+  fs.rmSync(sessionFile(settings, sessionId), { force: true });
+  fs.rmSync(memoryFile(settings, sessionId), { force: true });
+  return { ok: true };
+});
+
+ipcMain.handle('approve-command', (_event, answer) => {
+  if (!runningProcess || !runningProcess.stdin || runningProcess.stdin.destroyed) {
+    return { ok: false, error: 'No command is waiting for approval.' };
+  }
+  runningProcess.stdin.write(`${answer}\n`);
   return { ok: true };
 });
 

@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('safeclaw', {
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
   openChat: (settings) => ipcRenderer.invoke('open-chat', settings),
   filePath: (file) => webUtils.getPathForFile(file),
+  sessions: (settings) => ipcRenderer.invoke('list-sessions', settings),
+  renameSession: (settings, oldId, newId) => ipcRenderer.invoke('rename-session', settings, oldId, newId),
+  deleteSession: (settings, sessionId) => ipcRenderer.invoke('delete-session', settings, sessionId),
+  approve: (answer) => ipcRenderer.invoke('approve-command', answer),
   stop: () => ipcRenderer.invoke('stop-command'),
   onOutput: (callback) => ipcRenderer.on('command-output', (_event, payload) => callback(payload)),
 });

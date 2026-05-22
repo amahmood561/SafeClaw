@@ -102,34 +102,74 @@
                 <h2>Chat with SafeClaw</h2>
                 <p>Messages run through SafeClaw sessions, so history and memory stay local.</p>
               </div>
-              <button id="clearChatBtn">Clear View</button>
+              <div class="button-row flush">
+                <button id="retryChatBtn">Retry</button>
+                <button id="stopChatBtn">Stop</button>
+                <button id="clearChatBtn">Clear View</button>
+              </div>
             </div>
+            <div id="chatContextBar" class="chat-context-bar" aria-label="Active chat context"></div>
             <div id="chatMessages" class="chat-messages" aria-live="polite">
               <div class="empty-chat">
                 <strong>Start with a practical task.</strong>
                 <span>Ask SafeClaw to inspect setup, summarize files, plan changes, or explain what it can access. Drop files or links here to include them.</span>
+                <div class="starter-actions" aria-label="Suggested starter actions">
+                  <button data-starter="Run doctor">Run doctor</button>
+                  <button data-starter="Explain my config">Explain my config</button>
+                  <button data-starter="Check WhatsApp setup">Check WhatsApp setup</button>
+                  <button data-starter="Summarize this folder">Summarize this folder</button>
+                  <button data-starter="Inspect dropped file">Inspect dropped file</button>
+                </div>
               </div>
             </div>
+            <div id="approvalTray" class="approval-tray" hidden></div>
             <div id="chatDropZone" class="chat-drop-zone">
-              <strong>Drop files or links here</strong>
-              <span>Text files are attached with a capped preview. Other files are sent as local file references.</span>
+              <strong>Drop to attach</strong>
+              <span id="dropHint">Files and links become removable attachments before sending.</span>
             </div>
-            <div id="chatAttachments" class="chat-attachments" aria-live="polite"></div>
+            <details id="attachmentDrawer" class="attachment-drawer">
+              <summary><span>Attachments</span><strong id="attachmentCount">0</strong></summary>
+              <div id="chatAttachments" class="chat-attachments" aria-live="polite"></div>
+            </details>
             <div class="chat-composer">
               <textarea id="chatInput" rows="3" placeholder="Ask SafeClaw something..."></textarea>
               <button id="sendChatBtn" class="primary">Send</button>
             </div>
           </div>
           <aside class="chat-side panel">
-            <h3>Session</h3>
+            <div class="side-section">
+              <h3>Sessions</h3>
+              <div id="sessionList" class="session-list" aria-live="polite"></div>
+              <div class="button-row wrap">
+                <button id="refreshSessionsBtn">Refresh</button>
+                <button id="renameSessionBtn">Rename</button>
+                <button id="deleteSessionBtn">Delete</button>
+              </div>
+            </div>
+            <div class="side-section">
+              <h3>Current Session</h3>
             <label>Session name<input id="chatSession" value="desktop"></label>
             <label>Model override<input id="chatModel" placeholder="optional"></label>
             <label>Permission profile<select id="chatPermission"></select></label>
             <div class="hint">Use <code>readonly</code> for questions. Switch to wider profiles only when the task needs tools.</div>
+            </div>
+            <div class="side-section">
+              <h3>Memory</h3>
+              <label>Memory note<textarea id="memoryNote" rows="3" placeholder="Remember this project preference..."></textarea></label>
             <div class="button-row wrap">
+                <button id="rememberBtn">Remember This</button>
+                <button id="forgetLastBtn">Forget Last</button>
+                <button id="searchMemoryBtn">Search Memory</button>
+                <button id="exportSessionBtn">Export Session</button>
+              </div>
+            </div>
+            <div class="side-section">
+              <h3>Tools</h3>
+              <div class="button-row wrap">
               <button id="chatStatusBtn">Status</button>
               <button id="chatMemoryBtn">Memory</button>
               <button id="chatResetBtn">Reset Session</button>
+            </div>
             </div>
           </aside>
         </div>

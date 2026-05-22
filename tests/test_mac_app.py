@@ -87,6 +87,48 @@ def test_electron_chat_supports_dropped_files_and_links():
     assert "dragging-chat" in styles
 
 
+def test_electron_chat_fluidity_features_are_wired():
+    html = INDEX_HTML.read_text()
+    main = MAIN_JS.read_text()
+    preload = PRELOAD_JS.read_text()
+    renderer = RENDERER_JS.read_text()
+    styles = STYLES.read_text()
+
+    for text in [
+        "sessionList",
+        "chatContextBar",
+        "approvalTray",
+        "attachmentDrawer",
+        "Run doctor",
+        "Remember This",
+        "Export Session",
+    ]:
+        assert text in html
+
+    for text in ["list-sessions", "rename-session", "delete-session", "approve-command"]:
+        assert text in main
+
+    for text in ["sessions", "renameSession", "deleteSession", "approve"]:
+        assert text in preload
+
+    for text in [
+        "refreshSessions",
+        "renderApprovalCard",
+        "setMessageState",
+        "result-block",
+        "queued",
+        "needs approval",
+        "failed",
+        "stopped",
+        "done",
+        "Send as reference",
+        "Include contents",
+        "Outside workspace warning",
+        "Huge file warning",
+    ]:
+        assert text in renderer + styles
+
+
 def test_readme_references_mac_app_screenshots():
     text = (ROOT / "README.md").read_text()
 

@@ -12,7 +12,12 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 - Run `safeclaw doctor`.
 - Run one-off SafeClaw tasks.
 - Chat with SafeClaw inside the app interface.
+- Stream command output into the active chat response while keeping raw logs in Output.
+- Browse, rename, delete, and export local SafeClaw sessions.
 - Drag and drop files or links into chat.
+- Preview attachments, choose reference vs included content, and see workspace/size warnings.
+- Handle approval prompts with in-chat allow/deny cards when the CLI asks for confirmation.
+- Use starter actions, message states, workspace awareness, and memory controls from the chat surface.
 - Open the SafeClaw install folder.
 - Start the WhatsApp webhook.
 - Install, start, stop, and inspect the macOS WhatsApp service.

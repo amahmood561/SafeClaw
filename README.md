@@ -664,7 +664,7 @@ root.
 | `install.sh` | Fast non-interactive installer. | Clones SafeClaw, creates `.venv`, installs dependencies, installs the CLI, optionally creates a global launcher, copies `.env.example`, and runs `safeclaw tools`. |
 | `guided-install.sh` | Step-by-step installer for non-developers. | Asks for install folder, optional global command setup, API key, model, workspace, permission profile, approval mode, shell setting, Twilio settings, and optional test run. |
 | `mac-setup/` | Double-click macOS setup wizard. | Uses macOS dialogs to collect setup choices, installs SafeClaw, writes `.env`, runs diagnostics, and can configure persistent WhatsApp service mode. |
-| `mac-app/` | Electron macOS app wrapper. | Provides a desktop UI for installing/updating SafeClaw, saving config, running doctor/tasks, in-app chat, database commands, and managing WhatsApp service commands. |
+| `mac-app/` | Electron macOS app wrapper. | Provides a desktop UI for installing/updating SafeClaw, saving config, running doctor/tasks, in-app chat, optional Jarvis mode, database commands, and managing WhatsApp service commands. |
 | `.env.example` | Example local config file. | Shows all supported environment variables for models, workspace, permissions, approval mode, shell, SQLite databases, Twilio, and allowed WhatsApp senders. |
 | `requirements.txt` | Runtime Python dependencies. | Installs `python-dotenv`, `requests`, `rich`, and `typer`. |
 | `pyproject.toml` | Python package metadata. | Defines the `safeclaw` package and the `safeclaw` CLI command. |

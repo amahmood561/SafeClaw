@@ -11,7 +11,7 @@ from safeclaw.sessions import (
     search_memory,
     session_status,
 )
-from safeclaw.tools import run_tool, safe_path
+from safeclaw.tools import list_files, run_tool, safe_path
 
 
 def test_safe_path_blocks_workspace_escape():
@@ -21,6 +21,24 @@ def test_safe_path_blocks_workspace_escape():
         assert "escapes workspace" in str(exc)
     else:
         raise AssertionError("safe_path should block path escape")
+
+
+def test_file_tools_hide_safeclaw_internal_storage(workspace):
+    internal = workspace / ".safeclaw_sessions"
+    internal.mkdir()
+    (internal / "desktop.json").write_text('{"secret": true}')
+    (workspace / "visible.txt").write_text("visible")
+
+    assert "visible.txt" in list_files(".")
+    assert ".safeclaw_sessions" not in list_files(".")
+
+    blocked = run_tool(
+        "read_file",
+        {"path": ".safeclaw_sessions/desktop.json"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "internal storage" in blocked
 
 
 def test_permission_profiles_block_and_allow_write():

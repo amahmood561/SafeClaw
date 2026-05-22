@@ -12,6 +12,8 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 - Run `safeclaw doctor`.
 - Run one-off SafeClaw tasks.
 - Chat with SafeClaw inside the app interface.
+- Enable or disable Jarvis mode from the app sidebar or Setup screen.
+- Use Jarvis mode as a command center for queued tasks, active context, approvals, and WhatsApp service controls.
 - Stream command output into the active chat response while keeping raw logs in Output.
 - Browse, rename, delete, and export local SafeClaw sessions.
 - Drag and drop files or links into chat.
@@ -32,6 +34,7 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 6. Add API/model/workspace settings.
 7. Click **Save Config**.
 8. Click **Run Doctor**.
+9. Turn on **Jarvis mode** when you want the higher-level command center instead of the standard Chat view.
 
 ## Build a macOS app bundle
 

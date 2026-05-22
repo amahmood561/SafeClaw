@@ -48,6 +48,7 @@ def _print_provider_error(exc: LLMError, events: bool = False) -> None:
     payload = _provider_error_payload(exc)
     if events:
         emit_event(payload)
+        return
     console.print("[red]Provider error[/red]")
     console.print(str(exc))
     if exc.code == "insufficient_quota" or exc.error_type == "insufficient_quota":
@@ -56,7 +57,8 @@ def _print_provider_error(exc: LLMError, events: bool = False) -> None:
 @app.command()
 def run(task: str, session: str = "default", model: str = "", permission_profile: str = "", events: bool = False):
     """Run one task."""
-    console.print(Panel.fit("SafeClaw", subtitle=str(WORKSPACE)))
+    if not events:
+        console.print(Panel.fit("SafeClaw", subtitle=str(WORKSPACE)))
     try:
         kwargs = {}
         if events:
@@ -69,7 +71,8 @@ def run(task: str, session: str = "default", model: str = "", permission_profile
             interactive=True,
             **kwargs,
         )
-        console.print(result)
+        if not events:
+            console.print(result)
     except LLMError as exc:
         _print_provider_error(exc, events=events)
         raise typer.Exit(1)

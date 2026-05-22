@@ -24,6 +24,7 @@ from .config import (
 
 MAX_TOOL_OUTPUT = 12000
 MAX_READ_BYTES = 250000
+INTERNAL_WORKSPACE_DIR_PREFIX = ".safeclaw_"
 
 READ_TOOLS = {"list_files", "read_file", "search_files"}
 WRITE_TOOLS = {"write_file", "edit_file", "apply_patch"}
@@ -45,12 +46,22 @@ PROFILE_CAPABILITIES = {
 }
 
 
-def safe_path(path: str) -> Path:
+def _is_internal_workspace_path(target: Path) -> bool:
+    try:
+        relative = target.relative_to(WORKSPACE)
+    except ValueError:
+        return False
+    return bool(relative.parts and relative.parts[0].startswith(INTERNAL_WORKSPACE_DIR_PREFIX))
+
+
+def safe_path(path: str, allow_internal: bool = False) -> Path:
     target = (WORKSPACE / path).resolve()
     try:
         target.relative_to(WORKSPACE)
     except ValueError:
         raise ValueError("Path escapes workspace")
+    if not allow_internal and _is_internal_workspace_path(target):
+        raise ValueError("Path is inside SafeClaw internal storage")
     return target
 
 
@@ -175,6 +186,8 @@ def list_files(path: str = ".") -> str:
         return f"Not found: {path}"
     lines = []
     for p in sorted(base.rglob("*")):
+        if _is_internal_workspace_path(p):
+            continue
         if p.is_file():
             lines.append(str(p.relative_to(WORKSPACE)))
     return "\n".join(lines) or "No files found."

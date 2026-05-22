@@ -19,11 +19,13 @@
         <button class="nav-item active" data-view="setup">Setup</button>
         <button class="nav-item" data-view="run">Run</button>
         <button class="nav-item" data-view="chat">Chat</button>
+        <button class="nav-item" data-view="jarvis">Jarvis</button>
         <button class="nav-item" data-view="whatsapp">WhatsApp</button>
         <button class="nav-item" data-view="database">Databases</button>
         <button class="nav-item" data-view="logs">Output</button>
       </nav>
       <div class="sidebar-footer">
+        <label class="sidebar-toggle"><input id="jarvisModeToggle" type="checkbox"> Jarvis mode</label>
         <button id="openRepo" class="ghost">GitHub</button>
       </div>
     </aside>
@@ -75,6 +77,7 @@
             <label>Approval mode<select id="approvalMode"></select></label>
           </div>
           <label class="check"><input id="allowShell" type="checkbox"> Allow shell commands</label>
+          <label class="check"><input id="setupJarvisToggle" type="checkbox"> Enable Jarvis mode in the desktop app</label>
           <div class="button-row">
             <button id="saveConfigBtn" class="primary">Save Config</button>
             <button id="loadConfigBtn">Reload Config</button>
@@ -90,6 +93,13 @@
           <div class="button-row">
             <button id="runTaskBtn" class="primary">Run Task</button>
             <button id="toolsBtn">Show Tools</button>
+          </div>
+          <div id="taskResult" class="task-result" hidden>
+            <div class="task-result-header">
+              <strong>Result</strong>
+              <span id="taskResultState">Idle</span>
+            </div>
+            <div id="taskResultBody" class="task-result-body"></div>
           </div>
         </div>
       </section>
@@ -172,6 +182,93 @@
             </div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section id="jarvis" class="view">
+        <div class="jarvis-grid">
+          <div class="panel jarvis-hero">
+            <div>
+              <p class="eyebrow">Always-on local operator</p>
+              <h2>Jarvis mode</h2>
+              <p>Mission control for SafeClaw: queue work, monitor the local service, keep approvals visible, and send commands without leaving the desktop app.</p>
+            </div>
+            <div class="jarvis-state">
+              <span id="jarvisState">Idle</span>
+              <strong id="jarvisHeartbeat">Local app online</strong>
+            </div>
+          </div>
+
+          <div class="panel jarvis-command">
+            <div class="jarvis-command-header">
+              <div>
+                <h3>Command Center</h3>
+                <p>Run a command through the active chat session. Risky actions still go through SafeClaw permissions and approvals.</p>
+              </div>
+              <button id="jarvisPushToTalkBtn">Push to Talk</button>
+            </div>
+            <div id="jarvisContext" class="chat-context-bar"></div>
+            <textarea id="jarvisInput" rows="4" placeholder="Ask Jarvis to inspect setup, run doctor, check WhatsApp, or summarize this workspace."></textarea>
+            <div class="button-row wrap">
+              <button id="jarvisRunBtn" class="primary">Run in Chat</button>
+              <button id="jarvisQueueBtn">Add to Queue</button>
+              <button id="jarvisStopBtn">Stop</button>
+              <button id="jarvisOpenChatBtn">Open Chat</button>
+            </div>
+          </div>
+
+          <div class="panel jarvis-card">
+            <h3>Task Queue</h3>
+            <div id="jarvisQueue" class="jarvis-list">
+              <div class="jarvis-empty">No queued tasks.</div>
+            </div>
+            <div class="button-row wrap">
+              <button id="jarvisRunNextBtn">Run Next</button>
+              <button id="jarvisClearQueueBtn">Clear Queue</button>
+            </div>
+          </div>
+
+          <div class="panel jarvis-card">
+            <h3>Approval Inbox</h3>
+            <div id="jarvisApprovals" class="jarvis-list">
+              <div class="jarvis-empty">No approvals waiting.</div>
+            </div>
+            <div class="hint">Approval cards from chat also appear here when SafeClaw asks before a risky action.</div>
+          </div>
+
+          <div class="panel jarvis-card">
+            <h3>System Awareness</h3>
+            <div class="jarvis-matrix">
+              <div><span>Workspace</span><strong id="jarvisWorkspace">./workspace</strong></div>
+              <div><span>Model</span><strong id="jarvisModel">gpt-4.1-mini</strong></div>
+              <div><span>Permission</span><strong id="jarvisPermission">readonly</strong></div>
+              <div><span>Approval</span><strong id="jarvisApproval">ask</strong></div>
+            </div>
+          </div>
+
+          <div class="panel jarvis-card">
+            <h3>Remote Companion</h3>
+            <div class="jarvis-matrix">
+              <div><span>WhatsApp port</span><strong id="jarvisWhatsappPort">8080</strong></div>
+              <div><span>Service</span><strong id="jarvisServiceState">Unknown</strong></div>
+            </div>
+            <div class="button-row wrap">
+              <button id="jarvisServiceStatusBtn">Check Service</button>
+              <button id="jarvisStartServiceBtn">Start Service</button>
+              <button id="jarvisWhatsappSetupBtn">WhatsApp Setup</button>
+            </div>
+          </div>
+
+          <div class="panel jarvis-card wide">
+            <h3>Ask Me Before Rules</h3>
+            <div class="jarvis-rules">
+              <label class="check"><input type="checkbox" checked disabled> Ask before file writes and patches</label>
+              <label class="check"><input type="checkbox" checked disabled> Ask before shell commands</label>
+              <label class="check"><input type="checkbox" checked disabled> Ask before network fetches</label>
+              <label class="check"><input type="checkbox" checked disabled> Ask before WhatsApp sends</label>
+              <label class="check"><input type="checkbox" checked disabled> Block files outside workspace by default</label>
+            </div>
+          </div>
         </div>
       </section>
 

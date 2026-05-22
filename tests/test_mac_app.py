@@ -49,8 +49,14 @@ def test_electron_app_ui_has_expected_sections():
     for text in [
         "Install / Update",
         "Run Task",
+        "taskResult",
+        "taskResultBody",
         "Chat with SafeClaw",
         "Drop files or links here",
+        "Jarvis mode",
+        "Command Center",
+        "Task Queue",
+        "Approval Inbox",
         "WhatsApp",
         "Databases",
         "Run Read-only Query",
@@ -102,6 +108,11 @@ def test_electron_chat_fluidity_features_are_wired():
         "Run doctor",
         "Remember This",
         "Export Session",
+        "jarvisModeToggle",
+        "setupJarvisToggle",
+        "jarvisInput",
+        "jarvisQueue",
+        "jarvisApprovals",
     ]:
         assert text in html
 
@@ -123,6 +134,19 @@ def test_electron_chat_fluidity_features_are_wired():
         "extractLegacyProviderError",
         "providerErrorActive",
         "setMessageState",
+        "setJarvisEnabled",
+        "isJarvisEnabled",
+        "updateJarvisContext",
+        "renderJarvisQueue",
+        "addJarvisQueueTask",
+        "runJarvisTask",
+        "renderJarvisApprovals",
+        "runTaskInPanel",
+        "showToolsInPanel",
+        "isActiveTaskPayload",
+        "handleTaskEvent",
+        "taskResultBody",
+        "task-result",
         "result-block",
         "--events",
         "queued",
@@ -134,6 +158,8 @@ def test_electron_chat_fluidity_features_are_wired():
         "Include contents",
         "Outside workspace warning",
         "Huge file warning",
+        "jarvis-enabled",
+        "jarvis-list-item",
     ]:
         assert text in renderer + styles
 

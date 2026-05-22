@@ -18,6 +18,7 @@ const viewTitles = {
   setup: 'Setup',
   run: 'Run SafeClaw',
   chat: 'Chat',
+  jarvis: 'Jarvis Mode',
   whatsapp: 'WhatsApp',
   database: 'Databases',
   logs: 'Output',
@@ -32,6 +33,13 @@ let lastMemoryTarget = '';
 let eventLineBuffer = '';
 let saveConfigAfterInstall = false;
 let providerErrorActive = false;
+let jarvisEnabled = false;
+let jarvisQueue = [];
+let jarvisApprovals = [];
+let activeTaskResult = false;
+let activeTaskResultId = '';
+let activeTaskHadEvents = false;
+let taskProviderErrorActive = false;
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -88,11 +96,60 @@ function updateChatContext() {
   ].map(([label, value]) => `<span><strong>${label}</strong>${value}</span>`).join('');
 }
 
+function isJarvisEnabled() {
+  return window.localStorage.getItem('safeclaw.jarvis.enabled') === 'true';
+}
+
+function setJarvisEnabled(enabled) {
+  jarvisEnabled = Boolean(enabled);
+  window.localStorage.setItem('safeclaw.jarvis.enabled', jarvisEnabled ? 'true' : 'false');
+  if ($('jarvisModeToggle')) $('jarvisModeToggle').checked = jarvisEnabled;
+  if ($('setupJarvisToggle')) $('setupJarvisToggle').checked = jarvisEnabled;
+  const jarvisNav = document.querySelector('[data-view="jarvis"]');
+  if (jarvisNav) {
+    jarvisNav.classList.toggle('disabled', !jarvisEnabled);
+    jarvisNav.setAttribute('aria-disabled', jarvisEnabled ? 'false' : 'true');
+  }
+  document.body.classList.toggle('jarvis-enabled', jarvisEnabled);
+  if (!jarvisEnabled && document.querySelector('#jarvis.view.active')) {
+    showView('chat');
+  }
+  updateJarvisContext();
+}
+
+function updateJarvisContext() {
+  if (!$('jarvisContext')) return;
+  const model = $('chatModel').value.trim() || $('model').value.trim() || 'default model';
+  const profile = $('chatPermission').value || $('permissionProfile').value || 'readonly';
+  const approval = $('approvalMode').value || 'ask';
+  const workspace = workspaceDisplay();
+  const state = jarvisEnabled ? 'Enabled' : 'Disabled';
+  $('jarvisState').textContent = state;
+  $('jarvisHeartbeat').textContent = jarvisEnabled ? 'Local app online' : 'Switch on Jarvis mode to use this view';
+  $('jarvisWorkspace').textContent = workspace;
+  $('jarvisModel').textContent = model;
+  $('jarvisPermission').textContent = profile;
+  $('jarvisApproval').textContent = approval;
+  $('jarvisWhatsappPort').textContent = $('whatsappPort').value.trim() || '8080';
+  $('jarvisContext').innerHTML = [
+    ['Mode', state],
+    ['Workspace', workspace],
+    ['Permission', profile],
+    ['Approval', approval],
+    ['Model', model],
+  ].map(([label, value]) => `<span><strong>${label}</strong>${value}</span>`).join('');
+}
+
 function showView(name) {
+  if (name === 'jarvis' && !jarvisEnabled) {
+    setStatus('Jarvis disabled', 'idle');
+    name = 'chat';
+  }
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('active', view.id === name));
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('active', item.dataset.view === name));
   $('viewTitle').textContent = viewTitles[name] || 'SafeClaw';
   if (name === 'chat') updateChatContext();
+  if (name === 'jarvis') updateJarvisContext();
 }
 
 async function loadDefaults() {
@@ -133,6 +190,108 @@ async function runSafeClaw(args, title) {
   if (!result.ok) {
     appendOutput(`Error: ${result.error}\n`);
     setStatus('Idle');
+  }
+}
+
+function setTaskResultState(text, mode = 'idle') {
+  const state = $('taskResultState');
+  if (!state) return;
+  state.textContent = text;
+  state.dataset.mode = mode;
+}
+
+function clearTaskResult() {
+  $('taskResult').hidden = false;
+  $('taskResultBody').textContent = '';
+  setTaskResultState('Running', 'running');
+}
+
+function isActiveTaskPayload(payload) {
+  return activeTaskResult && payload.id === activeTaskResultId && !activeChatResponse;
+}
+
+function appendTaskResult(text) {
+  const body = $('taskResultBody');
+  body.textContent += text;
+  body.scrollTop = body.scrollHeight;
+}
+
+function renderTaskProviderError(event) {
+  taskProviderErrorActive = true;
+  const fix = event.code === 'insufficient_quota' || event.error_type === 'insufficient_quota'
+    ? '\n\nFix: check OpenAI API billing/quota at https://platform.openai.com/settings/organization/billing/overview'
+    : '';
+  $('taskResultBody').textContent = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  setTaskResultState('Failed', 'error');
+  setStatus('Provider error', 'error');
+}
+
+function handleTaskEvent(event) {
+  if (!event || !event.type) return;
+  if (event.type === 'task_started') {
+    setTaskResultState('Running', 'running');
+    setStatus('Running', 'running');
+  }
+  if (event.type === 'assistant_delta') {
+    appendTaskResult(event.content || '');
+  }
+  if (event.type === 'assistant_message' && !$('taskResultBody').textContent.trim()) {
+    $('taskResultBody').textContent = event.content || '';
+  }
+  if (event.type === 'provider_error') {
+    renderTaskProviderError(event);
+  }
+  if (event.type === 'tool_error') {
+    appendTaskResult(`\n\nTool error: ${event.content || event.tool || 'Unknown tool error'}`);
+  }
+  if (event.type === 'approval_required') {
+    renderApprovalCard(event.tool || 'Action approval', event.subject || event.arguments_preview || '', event);
+    appendTaskResult('\n\nWaiting for approval in the approval card.');
+    setTaskResultState('Needs approval', 'running');
+  }
+  if (event.type === 'task_done') {
+    if (!$('taskResultBody').textContent.trim()) {
+      $('taskResultBody').textContent = event.content || '';
+    }
+    setTaskResultState('Done', 'ok');
+    setStatus('Done', 'ok');
+  }
+}
+
+async function runTaskInPanel() {
+  const task = $('taskInput').value.trim();
+  if (!task) return;
+  showView('run');
+  clearTaskResult();
+  activeTaskResult = true;
+  activeTaskResultId = 'run';
+  activeTaskHadEvents = false;
+  taskProviderErrorActive = false;
+  const args = ['run', task, '--events'];
+  const permission = $('permissionProfile').value;
+  if (permission) args.push('--permission-profile', permission);
+  const result = await window.safeclaw.command(settings(), args, 'Run Task');
+  if (!result.ok) {
+    appendTaskResult(`Error: ${result.error}`);
+    setTaskResultState('Failed', 'error');
+    activeTaskResult = false;
+    activeTaskResultId = '';
+  }
+}
+
+async function showToolsInPanel() {
+  showView('run');
+  clearTaskResult();
+  activeTaskResult = true;
+  activeTaskResultId = 'tools';
+  activeTaskHadEvents = false;
+  taskProviderErrorActive = false;
+  const result = await window.safeclaw.command(settings(), ['tools'], 'Show Tools');
+  if (!result.ok) {
+    appendTaskResult(`Error: ${result.error}`);
+    setTaskResultState('Failed', 'error');
+    activeTaskResult = false;
+    activeTaskResultId = '';
   }
 }
 
@@ -218,11 +377,8 @@ function handleStructuredEvent(event) {
   if (event.type === 'assistant_message' && activeChatResponse && !activeChatResponse.textContent.trim()) {
     activeChatResponse.textContent = event.content || '';
   }
-  if (event.type === 'tool_call' && activeChatResponse) {
-    addResultBlock(activeChatResponse, 'tool', `Tool call: ${event.tool}\n${event.arguments || ''}`);
-  }
-  if (event.type === 'tool_result' && activeChatResponse) {
-    addResultBlock(activeChatResponse, 'tool', `Tool result: ${event.tool}\n${event.content || ''}`);
+  if (['tool_call', 'tool_started', 'tool_result', 'tool_message'].includes(event.type)) {
+    return;
   }
   if (event.type === 'tool_error' && activeChatResponse) {
     addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
@@ -498,8 +654,84 @@ function renderApprovalCard(kind, detail, event = {}) {
   });
   card.appendChild(actions);
   tray.appendChild(card);
+  addJarvisApproval(kind, detail, event);
   if (activeChatItem) setMessageState(activeChatItem, 'needs approval');
   setStatus('Needs approval', 'running');
+}
+
+function renderJarvisQueue() {
+  const list = $('jarvisQueue');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!jarvisQueue.length) {
+    list.innerHTML = '<div class="jarvis-empty">No queued tasks.</div>';
+    return;
+  }
+  jarvisQueue.forEach((task, index) => {
+    const row = document.createElement('div');
+    row.className = 'jarvis-list-item';
+    row.innerHTML = `<strong>${index + 1}. ${task.text}</strong><span>${formatTime(task.createdAt)}</span>`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      jarvisQueue = jarvisQueue.filter((item) => item.id !== task.id);
+      renderJarvisQueue();
+    });
+    row.appendChild(remove);
+    list.appendChild(row);
+  });
+}
+
+function addJarvisQueueTask(text) {
+  const task = text.trim();
+  if (!task) return;
+  jarvisQueue.push({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    text: task,
+    createdAt: new Date().toISOString(),
+  });
+  $('jarvisInput').value = '';
+  renderJarvisQueue();
+  setStatus('Queued', 'ok');
+}
+
+function runJarvisTask(text) {
+  const task = text.trim();
+  if (!task) return;
+  $('chatInput').value = task;
+  showView('chat');
+  sendChat();
+}
+
+function renderJarvisApprovals() {
+  const list = $('jarvisApprovals');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!jarvisApprovals.length) {
+    list.innerHTML = '<div class="jarvis-empty">No approvals waiting.</div>';
+    return;
+  }
+  jarvisApprovals.slice(-5).reverse().forEach((approval) => {
+    const row = document.createElement('div');
+    row.className = 'jarvis-list-item approval';
+    row.innerHTML = `
+      <strong>${approval.kind}</strong>
+      <span>${approval.reason}</span>
+      <code>${approval.detail}</code>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addJarvisApproval(kind, detail, event = {}) {
+  jarvisApprovals.push({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind,
+    detail: (event.subject || detail || event.arguments_preview || '').toString().slice(0, 240),
+    reason: event.reason || 'SafeClaw is waiting for a permission decision.',
+  });
+  renderJarvisApprovals();
 }
 
 function detectApproval(text) {
@@ -593,8 +825,8 @@ function bindEvents() {
   $('loadConfigBtn').addEventListener('click', loadEnv);
   $('doctorBtn').addEventListener('click', () => runSafeClaw(['doctor'], 'Run Doctor'));
   $('openFolderBtn').addEventListener('click', () => window.safeclaw.openPath(settings().installDir));
-  $('runTaskBtn').addEventListener('click', () => runSafeClaw(['run', $('taskInput').value], 'Run Task'));
-  $('toolsBtn').addEventListener('click', () => runSafeClaw(['tools'], 'Show Tools'));
+  $('runTaskBtn').addEventListener('click', runTaskInPanel);
+  $('toolsBtn').addEventListener('click', showToolsInPanel);
   $('sendChatBtn').addEventListener('click', sendChat);
   $('retryChatBtn').addEventListener('click', () => {
     if (!lastChatPrompt) return;
@@ -654,12 +886,15 @@ function bindEvents() {
     sendChat();
   });
   $('clearChatBtn').addEventListener('click', resetEmptyChat);
-  ['workspace', 'model', 'chatModel', 'chatPermission', 'permissionProfile', 'approvalMode'].forEach((id) => {
+  ['workspace', 'model', 'chatModel', 'chatPermission', 'permissionProfile', 'approvalMode', 'whatsappPort'].forEach((id) => {
     $(id).addEventListener('input', updateChatContext);
     $(id).addEventListener('change', updateChatContext);
+    $(id).addEventListener('input', updateJarvisContext);
+    $(id).addEventListener('change', updateJarvisContext);
   });
   $('chatSession').addEventListener('input', () => {
     updateChatContext();
+    updateJarvisContext();
     refreshSessions();
   });
   $('chatStatusBtn').addEventListener('click', () => runSafeClaw(currentSessionArgs('status'), 'Session Status'));
@@ -681,6 +916,34 @@ function bindEvents() {
     if (query) runSafeClaw(currentSessionArgs('memory-search', [query]), 'Search Memory');
   });
   $('exportSessionBtn').addEventListener('click', () => runSafeClaw(currentSessionArgs('export'), 'Export Session'));
+  $('jarvisModeToggle').addEventListener('change', (event) => setJarvisEnabled(event.target.checked));
+  $('setupJarvisToggle').addEventListener('change', (event) => setJarvisEnabled(event.target.checked));
+  $('jarvisRunBtn').addEventListener('click', () => runJarvisTask($('jarvisInput').value));
+  $('jarvisQueueBtn').addEventListener('click', () => addJarvisQueueTask($('jarvisInput').value));
+  $('jarvisRunNextBtn').addEventListener('click', () => {
+    const next = jarvisQueue.shift();
+    renderJarvisQueue();
+    if (next) runJarvisTask(next.text);
+  });
+  $('jarvisClearQueueBtn').addEventListener('click', () => {
+    jarvisQueue = [];
+    renderJarvisQueue();
+  });
+  $('jarvisStopBtn').addEventListener('click', () => $('stopChatBtn').click());
+  $('jarvisOpenChatBtn').addEventListener('click', () => showView('chat'));
+  $('jarvisPushToTalkBtn').addEventListener('click', () => {
+    setStatus('Voice not ready', 'idle');
+    appendOutput('Jarvis voice capture is not implemented yet. Type a command or queue a task for now.\n');
+  });
+  $('jarvisServiceStatusBtn').addEventListener('click', () => {
+    $('jarvisServiceState').textContent = 'Checking...';
+    runSafeClaw(['service-status'], 'Service Status');
+  });
+  $('jarvisStartServiceBtn').addEventListener('click', () => {
+    $('jarvisServiceState').textContent = 'Starting...';
+    runSafeClaw(['service-start'], 'Start Service');
+  });
+  $('jarvisWhatsappSetupBtn').addEventListener('click', () => runSafeClaw(['whatsapp-setup'], 'WhatsApp Setup'));
   $('openRepo').addEventListener('click', () => window.safeclaw.openUrl('https://github.com/amahmood561/SafeClaw'));
   $('twilioBtn').addEventListener('click', () => window.safeclaw.openUrl('https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn'));
   $('startWhatsappBtn').addEventListener('click', () => runSafeClaw(['whatsapp', '--host', '0.0.0.0', '--port', $('whatsappPort').value], 'Start WhatsApp Webhook'));
@@ -704,8 +967,13 @@ function bindEvents() {
   window.safeclaw.onOutput((payload) => {
     const parsed = splitEventLines(payload.text || '');
     parsed.events.forEach((event) => {
-      activeChatHadEvents = true;
-      handleStructuredEvent(event);
+      if (isActiveTaskPayload(payload)) {
+        activeTaskHadEvents = true;
+        handleTaskEvent(event);
+      } else {
+        activeChatHadEvents = true;
+        handleStructuredEvent(event);
+      }
     });
     const visibleText = parsed.visibleText;
     if (payload.type === 'start') setStatus('Running', 'running');
@@ -719,9 +987,12 @@ function bindEvents() {
         }
       }
       eventLineBuffer = '';
-      if (!providerErrorActive) {
+      if (!providerErrorActive && !taskProviderErrorActive) {
         setStatus(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
         if (activeChatItem) setMessageState(activeChatItem, payload.code === 0 ? 'done' : 'failed');
+        if (isActiveTaskPayload(payload) && !taskProviderErrorActive) {
+          setTaskResultState(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
+        }
       }
       refreshSessions();
       if (payload.id === 'install' && saveConfigAfterInstall) {
@@ -759,6 +1030,23 @@ function bindEvents() {
       activeChatHadEvents = false;
       providerErrorActive = false;
     }
+    if (isActiveTaskPayload(payload) && payload.type === 'stdout' && visibleText && !activeTaskHadEvents) {
+      appendTaskResult(visibleText);
+    }
+    if (isActiveTaskPayload(payload) && ['stderr', 'error'].includes(payload.type) && visibleText && !activeTaskHadEvents) {
+      const providerError = extractLegacyProviderError(visibleText);
+      if (providerError) {
+        renderTaskProviderError(providerError);
+      } else {
+        appendTaskResult(visibleText);
+      }
+    }
+    if (isActiveTaskPayload(payload) && payload.type === 'exit') {
+      activeTaskResult = false;
+      activeTaskResultId = '';
+      activeTaskHadEvents = false;
+      taskProviderErrorActive = false;
+    }
     if (visibleText || payload.type === 'start' || payload.type === 'exit') {
       appendOutput(visibleText || payload.text);
     }
@@ -772,7 +1060,11 @@ async function init() {
   await loadDefaults();
   await loadEnv().catch(() => {});
   bindEvents();
+  setJarvisEnabled(isJarvisEnabled());
   updateChatContext();
+  updateJarvisContext();
+  renderJarvisQueue();
+  renderJarvisApprovals();
   renderAttachments();
   await refreshSessions();
 }

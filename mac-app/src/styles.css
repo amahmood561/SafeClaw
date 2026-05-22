@@ -158,10 +158,36 @@ nav {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.nav-item.disabled {
+  opacity: 0.45;
+}
+
+body.jarvis-enabled .nav-item[data-view="jarvis"] {
+  color: #ffffff;
+  background: rgba(47, 125, 87, 0.34);
+}
+
 .sidebar-footer {
   display: grid;
   gap: 8px;
   margin-top: auto;
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: #dde8df;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-toggle input {
+  width: auto;
+  margin: 0;
 }
 
 main {
@@ -299,6 +325,55 @@ p {
 
 .output-panel {
   min-height: calc(100vh - 140px);
+}
+
+.task-result {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fbfcfb;
+}
+
+.task-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: white;
+}
+
+.task-result-header span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #284232;
+  background: #dceee2;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.task-result-header span[data-mode="running"] {
+  color: #66420e;
+  background: #f2dfbd;
+}
+
+.task-result-header span[data-mode="error"] {
+  color: #782c2c;
+  background: #f0d4d4;
+}
+
+.task-result-body {
+  min-height: 220px;
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+  padding: 16px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  line-height: 1.55;
 }
 
 .chat-shell {
@@ -658,6 +733,158 @@ body.dragging-chat .chat-drop-zone {
   font-size: 12px;
 }
 
+.jarvis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.jarvis-hero {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 160px;
+  color: white;
+  background:
+    linear-gradient(135deg, rgba(18, 25, 21, 0.95), rgba(35, 74, 58, 0.92)),
+    #121915;
+}
+
+.jarvis-hero p,
+.jarvis-hero .eyebrow {
+  color: #cbded1;
+}
+
+.jarvis-hero h2 {
+  font-size: 36px;
+}
+
+.jarvis-state {
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.jarvis-state span {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.jarvis-state strong {
+  font-size: 14px;
+}
+
+.jarvis-command {
+  min-height: 360px;
+}
+
+.jarvis-command-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.jarvis-command textarea {
+  min-height: 138px;
+}
+
+.jarvis-card.wide {
+  grid-column: 1 / -1;
+}
+
+.jarvis-list {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+}
+
+.jarvis-empty {
+  display: grid;
+  min-height: 72px;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: #fbfcfb;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.jarvis-list-item {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.jarvis-list-item strong,
+.jarvis-list-item span,
+.jarvis-list-item code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jarvis-list-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.jarvis-list-item button {
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.jarvis-list-item.approval {
+  border-color: #e1c787;
+  background: #fff8e7;
+}
+
+.jarvis-matrix {
+  display: grid;
+  gap: 8px;
+}
+
+.jarvis-matrix div {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.jarvis-matrix span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jarvis-matrix strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jarvis-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+}
+
 .output-header {
   display: flex;
   justify-content: space-between;
@@ -690,12 +917,23 @@ pre#output {
 
   .grid.two,
   .grid.three,
-  .chat-shell {
+  .chat-shell,
+  .jarvis-grid,
+  .jarvis-rules {
     grid-template-columns: 1fr;
   }
 
   .panel.intro {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .jarvis-hero,
+  .jarvis-command-header {
+    flex-direction: column;
+  }
+
+  .jarvis-state {
+    justify-items: start;
   }
 }

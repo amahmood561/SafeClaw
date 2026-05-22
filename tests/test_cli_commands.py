@@ -87,7 +87,7 @@ def test_run_command_can_emit_structured_events(monkeypatch):
     result = invoke("run", "hello", "--session", "s1", "--events")
 
     assert result.exit_code == 0
-    assert "task-result" in result.output
+    assert "task-result" not in result.output
     assert "SAFECLAW_EVENT" in result.stderr
     assert '"type": "task_done"' in result.stderr
     assert calls["event_callback"] is not None
@@ -106,9 +106,7 @@ def test_run_command_provider_error_exits_nonzero(monkeypatch):
     result = invoke("run", "hello", "--events")
 
     assert result.exit_code == 1
-    assert "Provider error" in result.output
-    assert "You exceeded your current quota" in result.output
-    assert "billing" in result.output
+    assert "Provider error" not in result.output
     assert "SAFECLAW_EVENT" in result.stderr
     assert '"type": "provider_error"' in result.stderr
 

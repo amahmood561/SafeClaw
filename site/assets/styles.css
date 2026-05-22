@@ -567,6 +567,33 @@ h1 {
   margin-top: 0;
 }
 
+.screenshot-stack {
+  display: grid;
+  gap: 28px;
+}
+
+.screenshot-stack figure {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.screenshot-stack img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.screenshot-stack figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .footer {
   border-top: 1px solid var(--line);
   background: #111714;

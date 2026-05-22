@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SafeClaw Mac App | Desktop UI for Local AI Automation</title>
+    <meta name="description" content="SafeClaw Mac app screenshots and setup notes for the Electron desktop UI with local chat, drag-and-drop files, database tools, WhatsApp setup, and explicit permissions.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://safestclaw.com/mac-app.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="SafeClaw">
+    <meta property="og:title" content="SafeClaw Mac App">
+    <meta property="og:description" content="A desktop control center for installing SafeClaw, chatting locally, dropping files and links, managing databases, and configuring WhatsApp.">
+    <meta property="og:url" content="https://safestclaw.com/mac-app.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="assets/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Main navigation">
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>SafeClaw</span></a>
+        <div class="nav-links">
+          <a href="index.html">Home</a>
+          <a href="install.html">Install</a>
+          <a href="docs.html">Docs</a>
+          <a href="api.html">API</a>
+          <a class="active" href="mac-app.html">Mac App</a>
+          <a href="roadmap.html">Roadmap</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="install.html">Install</a>
+          <a class="button primary" href="https://github.com/amahmood561/SafeClaw">GitHub</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Mac App</p>
+            <h1>SafeClaw with a desktop interface.</h1>
+          </div>
+          <p class="section-summary">The Electron Mac app gives non-terminal users a control center for setup, local chat, drag-and-drop files and links, database inspection, WhatsApp setup, and service commands.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card"><span class="tag">Setup</span><h3>Install without living in Terminal</h3><p>Install or update SafeClaw, save local config, set model/provider values, and run doctor from one screen.</p></article>
+          <article class="card"><span class="tag">Chat</span><h3>Local chat workspace</h3><p>Chat through SafeClaw sessions, attach files and links, keep memory local, and preserve explicit permission profiles.</p></article>
+          <article class="card"><span class="tag">Control</span><h3>Tools with visible boundaries</h3><p>Run database commands, WhatsApp setup, service controls, and diagnostics while keeping raw output separated.</p></article>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="section">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Screenshots</p>
+              <h2>What the Mac app looks like today.</h2>
+            </div>
+            <p class="section-summary">These screenshots are generated from the actual Electron UI in the repo so the page stays honest about the current product.</p>
+          </div>
+          <div class="screenshot-stack">
+            <figure>
+              <img src="assets/screenshots/mac-app-setup.png" alt="SafeClaw Mac app setup screen">
+              <figcaption>Setup, model provider, workspace, permissions, and doctor controls.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/screenshots/mac-app-chat.png" alt="SafeClaw Mac app chat screen with dropped file and link attachments">
+              <figcaption>In-app chat with local sessions plus dropped file and link attachments.</figcaption>
+            </figure>
+            <figure>
+              <img src="assets/screenshots/mac-app-databases.png" alt="SafeClaw Mac app database tools screen">
+              <figcaption>Read-only SQLite database tools for schema inspection and capped queries.</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="split">
+          <div>
+            <p class="section-kicker">Run locally</p>
+            <h2>Start the Electron app from the repo.</h2>
+            <p class="section-summary">The app lives in a separate <code>mac-app/</code> folder and calls the existing SafeClaw installer and CLI under the hood.</p>
+          </div>
+          <div>
+            <pre class="code-block"><code>cd mac-app
+npm install
+npm start</code></pre>
+            <p><a class="button secondary" href="install.html">See install docs</a></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        <div><strong>SafeClaw</strong><p>Desktop setup and chat for local-first automation.</p></div>
+        <div><a href="install.html">Install</a> &nbsp; <a href="docs.html">Docs</a> &nbsp; <a href="api.html">API</a> &nbsp; <a href="roadmap.html">Roadmap</a> &nbsp; <a href="https://github.com/amahmood561/SafeClaw">GitHub</a> &nbsp; <a href="https://buymeacoffee.com/alifla">Support</a></div>
+      </div>
+    </footer>
+  </body>
+</html>

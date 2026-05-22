@@ -9,6 +9,7 @@ Static product site for SafeClaw.
   and verification.
 - `docs.html`: Commands, permissions, memory, WhatsApp, and project structure.
 - `api.html`: CLI, tool, environment, webhook, and testing reference.
+- `mac-app.html`: Electron Mac app overview with screenshots.
 - `roadmap.html`: Roadmap, open safety questions, and contributor areas.
 
 Support links point to:

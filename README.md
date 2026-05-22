@@ -44,6 +44,7 @@ https://safestclaw.com.
 - `site/docs.html` documents commands, permissions, memory, WhatsApp, and repo
   structure.
 - `site/api.html` is the CLI/tool/environment reference.
+- `site/mac-app.html` shows the Electron Mac app with screenshots.
 - `site/roadmap.html` explains the current roadmap and contribution areas.
 - `ROADMAP_TODO.md` tracks the next Mac app chat improvements to work on.
 

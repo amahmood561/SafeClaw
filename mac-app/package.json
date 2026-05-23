@@ -7,7 +7,8 @@
   "scripts": {
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
     "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
-    "build:mac": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --dir"
+    "build:mac": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac",
+    "build:mac:dir": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --dir"
   },
   "devDependencies": {
     "electron": "^42.2.0",

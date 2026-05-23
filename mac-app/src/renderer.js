@@ -79,6 +79,8 @@ let activeTaskResultId = '';
 let activeTaskHadEvents = false;
 let taskProviderErrorActive = false;
 let loadingSession = false;
+let sessionRefreshTimer = null;
+let lastSessionTimestamps = new Map();
 let activeTaskText = '';
 const responseText = new WeakMap();
 let toolActivityCount = 0;
@@ -884,6 +886,7 @@ async function refreshSessions() {
   let current = chatSessionId();
   list.innerHTML = '';
   const sessions = await window.safeclaw.sessions(settings()).catch(() => [{ id: 'desktop', updatedAt: '' }]);
+  lastSessionTimestamps = new Map(sessions.map((session) => [session.id, session.updatedAt || '']));
   if (!sessions.some((session) => session.id === current)) {
     current = sessions[0]?.id || 'desktop';
     $('chatSession').value = current;
@@ -906,6 +909,28 @@ async function refreshSessions() {
     });
     list.appendChild(item);
   }
+  return sessions;
+}
+
+async function pollSessionUpdates() {
+  if (activeChatResponse || loadingSession) return;
+  const current = chatSessionId();
+  const previous = lastSessionTimestamps.get(current) || '';
+  const sessions = await window.safeclaw.sessions(settings()).catch(() => null);
+  if (!sessions) return;
+  const nextTimestamps = new Map(sessions.map((session) => [session.id, session.updatedAt || '']));
+  const currentSession = sessions.find((session) => session.id === current);
+  const changed = currentSession && (nextTimestamps.get(current) || '') !== previous;
+  lastSessionTimestamps = nextTimestamps;
+  await refreshSessions();
+  if (changed) await loadChatSession(current);
+}
+
+function startSessionAutoRefresh() {
+  if (sessionRefreshTimer) clearInterval(sessionRefreshTimer);
+  sessionRefreshTimer = setInterval(() => {
+    pollSessionUpdates().catch((error) => appendOutput(`Session refresh failed: ${error.message}\n`));
+  }, 2500);
 }
 
 function currentSessionArgs(command, extra = []) {
@@ -1382,6 +1407,7 @@ async function init() {
   renderAttachments();
   await refreshSessions();
   await loadChatSession(chatSessionId());
+  startSessionAutoRefresh();
 }
 
 init();

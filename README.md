@@ -365,6 +365,43 @@ Note: early DMG builds may be unsigned or not notarized yet, so macOS can show a
 warning. That does not mean the app is broken. The source install path below is
 still available if you prefer to run directly from the repository.
 
+If macOS keeps blocking the app after you move it into Applications, clear the
+download quarantine flag:
+
+```bash
+xattr -cr /Applications/SafeClaw.app
+```
+
+Then open SafeClaw again from Applications.
+
+### macOS developer tools
+
+If a source install, GitHub install, or setup script fails with this message:
+
+```text
+xcode-select: note: No developer tools were found, requesting install.
+```
+
+install Apple's Command Line Tools:
+
+```bash
+xcode-select --install
+```
+
+Click **Install** in the macOS popup, wait for it to finish, then rerun the
+SafeClaw installer.
+
+If the popup does not appear, or macOS says developer tools are already
+installed, reset the selected developer tools path and try again:
+
+```bash
+sudo xcode-select --reset
+xcode-select --install
+```
+
+This happens when macOS needs developer tooling for commands such as `git`,
+Python package setup, or local build steps.
+
 ### Database setup
 
 SafeClaw supports a conservative first database connector: read-only SQLite

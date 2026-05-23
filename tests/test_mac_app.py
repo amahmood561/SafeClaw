@@ -125,6 +125,8 @@ def test_electron_chat_fluidity_features_are_wired():
 
     for text in [
         "refreshSessions",
+        "Delete failed",
+        "sessions.some",
         "renderApprovalCard",
         "handleStructuredEvent",
         "splitEventLines",

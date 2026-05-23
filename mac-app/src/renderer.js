@@ -734,19 +734,26 @@ function formatTime(value) {
 
 async function refreshSessions() {
   const list = $('sessionList');
-  const current = chatSessionId();
+  let current = chatSessionId();
   list.innerHTML = '';
   const sessions = await window.safeclaw.sessions(settings()).catch(() => [{ id: 'desktop', updatedAt: '' }]);
+  if (!sessions.some((session) => session.id === current)) {
+    current = sessions[0]?.id || 'desktop';
+    $('chatSession').value = current;
+    updateChatContext();
+    updateJarvisContext();
+  }
   for (const session of sessions) {
     const item = document.createElement('button');
     item.className = 'session-item';
     item.type = 'button';
     item.classList.toggle('active', session.id === current);
     item.innerHTML = `<strong>${session.id}</strong><span>${formatTime(session.updatedAt)} · ${session.messages || 0} messages</span>`;
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async () => {
       $('chatSession').value = session.id;
       updateChatContext();
-      refreshSessions();
+      updateJarvisContext();
+      await refreshSessions();
     });
     list.appendChild(item);
   }
@@ -988,15 +995,18 @@ function bindEvents() {
     if (!result.ok) return appendOutput(`Rename failed: ${result.error}\n`);
     $('chatSession').value = newId;
     updateChatContext();
-    refreshSessions();
+    updateJarvisContext();
+    await refreshSessions();
   });
   $('deleteSessionBtn').addEventListener('click', async () => {
     const session = chatSessionId();
     if (!confirm(`Delete session "${session}"?`)) return;
-    await window.safeclaw.deleteSession(settings(), session);
+    const result = await window.safeclaw.deleteSession(settings(), session);
+    if (!result.ok) return appendOutput(`Delete failed: ${result.error}\n`);
     $('chatSession').value = 'desktop';
     updateChatContext();
-    refreshSessions();
+    updateJarvisContext();
+    await refreshSessions();
   });
   ['dragenter', 'dragover'].forEach((name) => {
     $('chat').addEventListener(name, (event) => {

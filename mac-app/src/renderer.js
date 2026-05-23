@@ -82,6 +82,9 @@ let loadingSession = false;
 let sessionRefreshTimer = null;
 let lastSessionTimestamps = new Map();
 let activeTaskText = '';
+let activeTaskRecordId = '';
+let taskHistory = [];
+let taskQueue = [];
 const responseText = new WeakMap();
 let toolActivityCount = 0;
 
@@ -284,13 +287,14 @@ function setTaskResultState(text, mode = 'idle') {
   if (!state) return;
   state.textContent = text;
   state.dataset.mode = mode;
+  updateActiveTaskRecord({ status: text, statusMode: mode });
 }
 
-function clearTaskResult() {
+function clearTaskResult(task = null) {
   $('taskResult').hidden = false;
-  activeTaskText = '';
+  activeTaskText = task?.result || '';
   renderTaskResultText();
-  setTaskResultState('Running', 'running');
+  setTaskResultState(task?.status || 'Running', task?.statusMode || 'running');
 }
 
 function fixMojibake(text) {
@@ -411,6 +415,166 @@ function getResponseText(node) {
   return responseText.get(node) || node.textContent || '';
 }
 
+function taskStorageKey() {
+  return `safeclaw.taskHistory.${settings().installDir}`;
+}
+
+function loadTaskHistory() {
+  try {
+    taskHistory = JSON.parse(window.localStorage.getItem(taskStorageKey()) || '[]');
+  } catch (_error) {
+    taskHistory = [];
+  }
+  if (!Array.isArray(taskHistory)) taskHistory = [];
+  taskHistory = taskHistory.slice(0, 40);
+}
+
+function saveTaskHistory() {
+  window.localStorage.setItem(taskStorageKey(), JSON.stringify(taskHistory.slice(0, 40)));
+}
+
+function publishTaskStatus() {
+  if (!window.safeclaw.writeTaskStatus) return;
+  const running = activeTaskResult ? activeTaskRecord() : null;
+  const queued = taskQueue
+    .map((id) => taskHistory.find((task) => task.id === id))
+    .filter(Boolean);
+  const recent = taskHistory.slice(0, 8).map((task) => ({
+    id: task.id,
+    prompt: task.prompt,
+    status: task.status,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  }));
+  window.safeclaw.writeTaskStatus(settings(), {
+    updatedAt: new Date().toISOString(),
+    running: running ? {
+      id: running.id,
+      prompt: running.prompt,
+      status: running.status,
+      startedAt: running.createdAt,
+      updatedAt: running.updatedAt,
+    } : null,
+    queued: queued.map((task) => ({
+      id: task.id,
+      prompt: task.prompt,
+      status: task.status,
+      createdAt: task.createdAt,
+    })),
+    recent,
+  }).catch(() => {});
+}
+
+function taskTitle(task) {
+  return task?.prompt || task?.title || 'Untitled task';
+}
+
+function createTaskRecord(prompt, kind = 'task', status = 'Queued', statusMode = 'idle') {
+  const record = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    kind,
+    prompt,
+    result: '',
+    status,
+    statusMode,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  taskHistory = [record, ...taskHistory].slice(0, 40);
+  activeTaskRecordId = record.id;
+  saveTaskHistory();
+  renderTaskHistory();
+  publishTaskStatus();
+  return record;
+}
+
+function activeTaskRecord() {
+  return taskHistory.find((task) => task.id === activeTaskRecordId) || null;
+}
+
+function updateActiveTaskRecord(patch) {
+  if (!activeTaskRecordId) return;
+  const record = activeTaskRecord();
+  if (!record) return;
+  Object.assign(record, patch, { updatedAt: new Date().toISOString() });
+  saveTaskHistory();
+  renderTaskHistory();
+  publishTaskStatus();
+}
+
+function selectTaskRecord(id) {
+  const record = taskHistory.find((task) => task.id === id);
+  if (!record) return;
+  activeTaskRecordId = record.id;
+  $('taskResult').hidden = false;
+  activeTaskText = record.result || '';
+  renderTaskResultText();
+  setTaskResultState(record.status || 'Done', record.statusMode || 'ok');
+  renderTaskHistory();
+}
+
+async function cancelSelectedTask() {
+  const record = activeTaskRecord();
+  if (!record) return;
+  if (record.status === 'Queued') {
+    taskQueue = taskQueue.filter((id) => id !== record.id);
+    updateActiveTaskRecord({ status: 'Cancelled', statusMode: 'error', result: record.result || 'Task cancelled before it started.' });
+    return;
+  }
+  if (activeTaskResult && record.id === activeTaskRecordId) {
+    updateActiveTaskRecord({ status: 'Stopped', statusMode: 'error', result: activeTaskText || 'Task stopped by user.' });
+    activeTaskText = activeTaskRecord()?.result || 'Task stopped by user.';
+    renderTaskResultText();
+    setTaskResultState('Stopped', 'error');
+    const result = await window.safeclaw.stop();
+    if (!result.ok) appendOutput(`Stop failed: ${result.error}\n`);
+    publishTaskStatus();
+    return;
+  }
+  updateActiveTaskRecord({ status: 'Cancelled', statusMode: 'error' });
+}
+
+async function deleteSelectedTask() {
+  const record = activeTaskRecord();
+  if (!record) return;
+  const deletingRunning = activeTaskResult && record.id === activeTaskRecordId;
+  if (deletingRunning) {
+    const result = await window.safeclaw.stop();
+    if (!result.ok) appendOutput(`Stop failed: ${result.error}\n`);
+  }
+  taskQueue = taskQueue.filter((id) => id !== record.id);
+  taskHistory = taskHistory.filter((task) => task.id !== record.id);
+  activeTaskRecordId = taskHistory[0]?.id || '';
+  saveTaskHistory();
+  renderTaskHistory();
+  publishTaskStatus();
+  if (activeTaskRecordId) {
+    selectTaskRecord(activeTaskRecordId);
+  } else {
+    $('taskResult').hidden = true;
+    activeTaskText = '';
+  }
+}
+
+function renderTaskHistory() {
+  const list = $('taskHistoryList');
+  if (!list) return;
+  if (!taskHistory.length) {
+    list.innerHTML = '<div class="task-history-empty">No tasks yet. Run a task and it will stay here for follow-up questions.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  for (const task of taskHistory) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'task-history-item';
+    item.classList.toggle('active', task.id === activeTaskRecordId);
+    item.innerHTML = `<strong>${escapeHtml(taskTitle(task))}</strong><span>${escapeHtml(task.status || 'Done')} · ${formatTime(task.updatedAt || task.createdAt)}</span>`;
+    item.addEventListener('click', () => selectTaskRecord(task.id));
+    list.appendChild(item);
+  }
+}
+
 function renderTaskResultText() {
   const body = $('taskResultBody');
   if (activeTaskText.trim()) {
@@ -428,6 +592,7 @@ function isActiveTaskPayload(payload) {
 
 function appendTaskResult(text) {
   activeTaskText += text;
+  updateActiveTaskRecord({ result: activeTaskText });
   renderTaskResultText();
 }
 
@@ -437,6 +602,7 @@ function renderTaskProviderError(event) {
     ? '\n\nFix: check OpenAI API billing/quota at https://platform.openai.com/settings/organization/billing/overview'
     : '';
   activeTaskText = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  updateActiveTaskRecord({ result: activeTaskText, status: 'Failed', statusMode: 'error' });
   renderTaskResultText();
   setTaskResultState('Failed', 'error');
   setStatus('Provider error', 'error');
@@ -453,6 +619,7 @@ function handleTaskEvent(event) {
   }
   if (event.type === 'assistant_message' && !activeTaskText.trim()) {
     activeTaskText = event.content || '';
+    updateActiveTaskRecord({ result: activeTaskText });
     renderTaskResultText();
   }
   if (event.type === 'provider_error') {
@@ -469,6 +636,7 @@ function handleTaskEvent(event) {
   if (event.type === 'task_done') {
     if (!activeTaskText.trim()) {
       activeTaskText = event.content || '';
+      updateActiveTaskRecord({ result: activeTaskText });
       renderTaskResultText();
     }
     setTaskResultState('Done', 'ok');
@@ -480,12 +648,26 @@ async function runTaskInPanel() {
   const task = $('taskInput').value.trim();
   if (!task) return;
   showView('run');
-  clearTaskResult();
+  const record = createTaskRecord(task, 'task', activeTaskResult ? 'Queued' : 'Running', activeTaskResult ? 'idle' : 'running');
+  if (activeTaskResult) {
+    taskQueue.push(record.id);
+    setStatus('Queued', 'ok');
+    renderTaskHistory();
+    publishTaskStatus();
+    return;
+  }
+  await startTaskRecord(record);
+}
+
+async function startTaskRecord(record) {
+  activeTaskRecordId = record.id;
+  updateActiveTaskRecord({ status: 'Running', statusMode: 'running' });
+  clearTaskResult(record);
   activeTaskResult = true;
   activeTaskResultId = 'run';
   activeTaskHadEvents = false;
   taskProviderErrorActive = false;
-  const args = ['run', task, '--events'];
+  const args = ['run', record.prompt, '--events'];
   const permission = $('permissionProfile').value;
   if (permission) args.push('--permission-profile', permission);
   const result = await window.safeclaw.command(settings(), args, 'Run Task');
@@ -497,8 +679,26 @@ async function runTaskInPanel() {
   }
 }
 
+function runNextQueuedTask() {
+  if (activeTaskResult || !taskQueue.length) return;
+  const nextId = taskQueue.shift();
+  publishTaskStatus();
+  const record = taskHistory.find((task) => task.id === nextId);
+  if (!record) return runNextQueuedTask();
+  startTaskRecord(record).catch((error) => {
+    activeTaskRecordId = record.id;
+    activeTaskText = `Error: ${error.message}`;
+    updateActiveTaskRecord({ result: activeTaskText, status: 'Failed', statusMode: 'error' });
+    renderTaskResultText();
+    setTaskResultState('Failed', 'error');
+    publishTaskStatus();
+    runNextQueuedTask();
+  });
+}
+
 async function showToolsInPanel() {
   showView('run');
+  createTaskRecord('Show available SafeClaw tools', 'tools', 'Running', 'running');
   clearTaskResult();
   activeTaskResult = true;
   activeTaskResultId = 'tools';
@@ -511,6 +711,17 @@ async function showToolsInPanel() {
     activeTaskResult = false;
     activeTaskResultId = '';
   }
+}
+
+function askAboutSelectedTask() {
+  const record = activeTaskRecord();
+  const question = $('taskFollowupInput').value.trim();
+  if (!record || !question) return;
+  const result = (record.result || '').trim();
+  const clippedResult = result.length > 12000 ? `${result.slice(0, 12000)}\n\n[Task result clipped for chat context.]` : result;
+  $('chatInput').value = `I want to ask a follow-up question about this SafeClaw task.\n\nTask:\n${record.prompt}\n\nTask result:\n${clippedResult || 'No result captured yet.'}\n\nQuestion:\n${question}`;
+  showView('chat');
+  sendChat();
 }
 
 function chatArgs(command, extra = []) {
@@ -1151,6 +1362,17 @@ function bindEvents() {
   $('openFolderBtn').addEventListener('click', () => window.safeclaw.openPath(settings().installDir));
   $('runTaskBtn').addEventListener('click', runTaskInPanel);
   $('toolsBtn').addEventListener('click', showToolsInPanel);
+  $('askTaskBtn').addEventListener('click', askAboutSelectedTask);
+  $('cancelTaskBtn').addEventListener('click', cancelSelectedTask);
+  $('deleteTaskBtn').addEventListener('click', deleteSelectedTask);
+  $('clearTaskHistoryBtn').addEventListener('click', () => {
+    taskHistory = [];
+    taskQueue = [];
+    activeTaskRecordId = '';
+    saveTaskHistory();
+    renderTaskHistory();
+    publishTaskStatus();
+  });
   $('sendChatBtn').addEventListener('click', sendChat);
   $('retryChatBtn').addEventListener('click', () => {
     if (!lastChatPrompt) return;
@@ -1326,7 +1548,12 @@ function bindEvents() {
         setStatus(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
         if (activeChatItem) setMessageState(activeChatItem, payload.code === 0 ? 'done' : 'failed');
         if (isActiveTaskPayload(payload) && !taskProviderErrorActive) {
-          setTaskResultState(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
+          const taskRecord = activeTaskRecord();
+          if (taskRecord?.status === 'Stopped' || taskRecord?.status === 'Cancelled') {
+            setTaskResultState(taskRecord.status, 'error');
+          } else {
+            setTaskResultState(payload.code === 0 ? 'Done' : 'Failed', payload.code === 0 ? 'ok' : 'error');
+          }
         }
       }
       refreshSessions();
@@ -1381,6 +1608,8 @@ function bindEvents() {
       activeTaskResultId = '';
       activeTaskHadEvents = false;
       taskProviderErrorActive = false;
+      publishTaskStatus();
+      runNextQueuedTask();
     }
     if (visibleText || payload.type === 'start' || payload.type === 'exit') {
       appendOutput(visibleText || payload.text);
@@ -1400,11 +1629,14 @@ async function init() {
   await loadEnv().catch(() => {});
   bindEvents();
   setJarvisEnabled(isJarvisEnabled());
+  loadTaskHistory();
   updateChatContext();
   updateJarvisContext();
   renderJarvisQueue();
   renderJarvisApprovals();
   renderAttachments();
+  renderTaskHistory();
+  publishTaskStatus();
   await refreshSessions();
   await loadChatSession(chatSessionId());
   startSessionAutoRefresh();

@@ -1,9 +1,11 @@
+import json
 import time
+from pathlib import Path
 
 import requests
 
 from .agent import run_task
-from .config import SAFECLAW_ALLOWED_TELEGRAM_USERS, TELEGRAM_BOT_TOKEN
+from .config import SAFECLAW_ALLOWED_TELEGRAM_USERS, TELEGRAM_BOT_TOKEN, WORKSPACE
 from .sessions import recall, reset_session, session_status, update_session_settings
 
 
@@ -100,6 +102,7 @@ Commands:
 /help - show commands
 /status - show session status
 /memory - show saved memory
+/tasks - show running and queued desktop tasks
 /reset - reset this chat session
 /permissions - show current safety profile
 /permissions PROFILE - set profile for this chat
@@ -160,6 +163,68 @@ def _is_task_menu_request(text: str) -> bool:
     return any(phrase in lowered for phrase in phrases)
 
 
+def _is_task_status_request(text: str) -> bool:
+    lowered = text.lower()
+    phrases = [
+        "task status",
+        "running task",
+        "running tasks",
+        "queued task",
+        "queued tasks",
+        "what is running",
+        "what's running",
+        "anything running",
+    ]
+    return lowered in {"tasks", "/tasks", "running", "/running", "queue", "/queue"} or any(phrase in lowered for phrase in phrases)
+
+
+def _task_runtime_path() -> Path:
+    return WORKSPACE / ".safeclaw_runtime" / "tasks.json"
+
+
+def task_status_text() -> str:
+    path = _task_runtime_path()
+    if not path.exists():
+        return "No desktop task status found. Open the SafeClaw Mac app and run or queue a task first."
+    try:
+        data = json.loads(path.read_text())
+    except Exception as exc:
+        return f"Could not read task status: {exc}"
+
+    running = data.get("running")
+    queued = data.get("queued") or []
+    recent = data.get("recent") or []
+    lines = ["SafeClaw task status"]
+    if running:
+        lines.extend([
+            "",
+            "Running:",
+            f"- {running.get('prompt', 'Untitled task')}",
+            f"  Status: {running.get('status', 'Running')}",
+        ])
+    else:
+        lines.extend(["", "Running: none"])
+
+    if queued:
+        lines.append("")
+        lines.append("Queued:")
+        for index, task in enumerate(queued[:5], start=1):
+            lines.append(f"{index}. {task.get('prompt', 'Untitled task')}")
+    else:
+        lines.extend(["", "Queued: none"])
+
+    completed = [task for task in recent if task.get("status") in {"Done", "Failed"}]
+    if completed:
+        lines.append("")
+        lines.append("Recent:")
+        for task in completed[:3]:
+            lines.append(f"- {task.get('status')}: {task.get('prompt', 'Untitled task')}")
+
+    lines.append("")
+    lines.append("Queued tasks run one at a time. When the current task finishes, the next queued task starts automatically.")
+    return "\n".join(lines)
+
+
 def _sender_allowed(sender_id: str) -> bool:
     return not SAFECLAW_ALLOWED_TELEGRAM_USERS or sender_id in SAFECLAW_ALLOWED_TELEGRAM_USERS
 
@@ -182,6 +247,8 @@ def _reply_for_message(body: str, sender_id: str) -> str:
         return str(session_status(session_id))
     if lowered in {"memory", "/memory"}:
         return recall(session_id)
+    if _is_task_status_request(text):
+        return task_status_text()
     if lowered in {"permissions", "/permissions"}:
         status = session_status(session_id)
         return f"Permission profile: {status.get('permission_profile') or 'readonly'}"

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('safeclaw', {
   loadSession: (settings, sessionId) => ipcRenderer.invoke('load-session', settings, sessionId),
   renameSession: (settings, oldId, newId) => ipcRenderer.invoke('rename-session', settings, oldId, newId),
   deleteSession: (settings, sessionId) => ipcRenderer.invoke('delete-session', settings, sessionId),
+  writeTaskStatus: (settings, payload) => ipcRenderer.invoke('write-task-status', settings, payload),
   approve: (answer) => ipcRenderer.invoke('approve-command', answer),
   stop: () => ipcRenderer.invoke('stop-command'),
   onOutput: (callback) => ipcRenderer.on('command-output', (_event, payload) => callback(payload)),

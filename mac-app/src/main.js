@@ -93,6 +93,10 @@ function memoryFile(settings, sessionId) {
   return path.join(workspacePath(settings), '.safeclaw_memory', `${safeId(sessionId)}.json`);
 }
 
+function runtimeTasksFile(settings) {
+  return path.join(workspacePath(settings), '.safeclaw_runtime', 'tasks.json');
+}
+
 function listSessionFiles(settings = {}) {
   const dir = path.join(workspacePath(settings), '.safeclaw_sessions');
   if (!fs.existsSync(dir)) {
@@ -358,6 +362,13 @@ ipcMain.handle('delete-session', (_event, settings, sessionId) => {
   fs.rmSync(sessionFile(settings, sessionId), { force: true });
   fs.rmSync(memoryFile(settings, sessionId), { force: true });
   return { ok: true };
+});
+
+ipcMain.handle('write-task-status', (_event, settings, payload) => {
+  const filePath = runtimeTasksFile(settings);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(payload || {}, null, 2));
+  return { ok: true, path: filePath };
 });
 
 ipcMain.handle('approve-command', (_event, answer) => {

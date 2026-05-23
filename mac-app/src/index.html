@@ -90,24 +90,46 @@
       </section>
 
       <section id="run" class="view">
-        <div class="panel">
-          <h2>Run a task</h2>
-          <p>Use one-shot tasks for practical work. For a conversation, use the in-app Chat tab.</p>
-          <textarea id="taskInput" rows="5">summarize my SafeClaw setup</textarea>
-          <div class="button-row">
-            <button id="runTaskBtn" class="primary">Run Task</button>
-            <button id="toolsBtn">Show Tools</button>
-          </div>
-          <div id="taskResult" class="task-result" hidden>
-            <div class="task-result-header">
-              <div>
-                <strong>Response</strong>
-                <small>Clean task output. Raw command logs stay in Output.</small>
-              </div>
-              <span id="taskResultState">Idle</span>
+        <div class="task-workspace">
+          <div class="panel">
+            <h2>Run tasks</h2>
+            <p>Add multiple tasks here. SafeClaw runs one task at a time; when the current task finishes, the next queued task starts automatically.</p>
+            <textarea id="taskInput" rows="5">summarize my SafeClaw setup</textarea>
+            <div class="button-row">
+              <button id="runTaskBtn" class="primary">Run Task</button>
+              <button id="toolsBtn">Show Tools</button>
             </div>
-            <div id="taskResultBody" class="task-result-body"></div>
+            <div id="taskResult" class="task-result" hidden>
+              <div class="task-result-header">
+                <div>
+                  <strong>Response</strong>
+                  <small>Clean task output. Raw command logs stay in Output.</small>
+                </div>
+                <span id="taskResultState">Idle</span>
+              </div>
+              <div id="taskResultBody" class="task-result-body"></div>
+            </div>
           </div>
+          <aside class="panel task-side">
+            <div class="side-section">
+              <h3>Task History</h3>
+              <div class="hint">Queued tasks wait their turn. Completed tasks stay selectable for follow-up questions.</div>
+              <div id="taskHistoryList" class="task-history-list" aria-live="polite"></div>
+              <div class="button-row wrap">
+                <button id="cancelTaskBtn">Cancel Selected</button>
+                <button id="deleteTaskBtn">Delete Selected</button>
+                <button id="clearTaskHistoryBtn">Clear History</button>
+              </div>
+            </div>
+            <div class="side-section">
+              <h3>Ask About Selected Task</h3>
+              <textarea id="taskFollowupInput" rows="4" placeholder="Ask a question about this task result..."></textarea>
+              <div class="button-row wrap">
+                <button id="askTaskBtn" class="primary">Ask in Chat</button>
+              </div>
+              <div class="hint">The selected task prompt and result are sent to the active chat session as context.</div>
+            </div>
+          </aside>
         </div>
       </section>
 

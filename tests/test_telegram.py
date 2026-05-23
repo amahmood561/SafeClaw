@@ -46,6 +46,35 @@ def test_telegram_task_menu_is_phone_native(monkeypatch):
     assert "sandboxed workspace" not in reply
 
 
+def test_telegram_task_status_reads_runtime_file(tmp_path, monkeypatch):
+    runtime = tmp_path / ".safeclaw_runtime"
+    runtime.mkdir()
+    (runtime / "tasks.json").write_text(
+        """{
+          "running": {"prompt": "audit project", "status": "Running"},
+          "queued": [{"prompt": "summarize docs", "status": "Queued"}],
+          "recent": [{"prompt": "old task", "status": "Done"}]
+        }"""
+    )
+    monkeypatch.setattr(telegram, "WORKSPACE", tmp_path)
+
+    reply = telegram.task_status_text()
+
+    assert "Running:" in reply
+    assert "audit project" in reply
+    assert "Queued:" in reply
+    assert "summarize docs" in reply
+    assert "next queued task starts automatically" in reply
+
+
+def test_telegram_task_status_command(monkeypatch):
+    monkeypatch.setattr(telegram, "SAFECLAW_ALLOWED_TELEGRAM_USERS", [])
+    monkeypatch.setattr(telegram, "task_status_text", lambda: "task-status")
+
+    assert telegram._reply_for_message("/tasks", "42") == "task-status"
+    assert telegram._reply_for_message("anything running?", "42") == "task-status"
+
+
 def test_telegram_normal_message_runs_task(monkeypatch):
     calls = {}
     monkeypatch.setattr(telegram, "SAFECLAW_ALLOWED_TELEGRAM_USERS", [])

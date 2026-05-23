@@ -53,6 +53,12 @@ def test_electron_app_ui_has_expected_sections():
         "Run Task",
         "taskResult",
         "taskResultBody",
+        "Task History",
+        "next queued task starts automatically",
+        "Ask About Selected Task",
+        "askTaskBtn",
+        "cancelTaskBtn",
+        "deleteTaskBtn",
         "Chat with SafeClaw",
         "Drop files or links here",
         "Jarvis mode",
@@ -123,11 +129,11 @@ def test_electron_chat_fluidity_features_are_wired():
     ]:
         assert text in html
 
-    for text in ["list-sessions", "load-session", "rename-session", "delete-session", "approve-command"]:
+    for text in ["list-sessions", "load-session", "rename-session", "delete-session", "write-task-status", ".safeclaw_runtime", "approve-command"]:
         assert text in main
     assert "SAFECLAW_EVENT_STREAM" in main
 
-    for text in ["sessions", "loadSession", "renameSession", "deleteSession", "approve"]:
+    for text in ["sessions", "loadSession", "renameSession", "deleteSession", "writeTaskStatus", "approve"]:
         assert text in preload
 
     for text in [
@@ -165,6 +171,21 @@ def test_electron_chat_fluidity_features_are_wired():
         "showToolsInPanel",
         "isActiveTaskPayload",
         "handleTaskEvent",
+        "taskHistory",
+        "taskQueue",
+        "publishTaskStatus",
+        "startTaskRecord",
+        "runNextQueuedTask",
+        "taskHistoryList",
+        "loadTaskHistory",
+        "saveTaskHistory",
+        "renderTaskHistory",
+        "selectTaskRecord",
+        "askAboutSelectedTask",
+        "cancelSelectedTask",
+        "deleteSelectedTask",
+        "taskFollowupInput",
+        "clearTaskHistoryBtn",
         "taskResultBody",
         "task-result",
         "fixMojibake",

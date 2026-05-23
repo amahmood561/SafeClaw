@@ -119,6 +119,7 @@ injects the analytics beacon into `site-dist/` only during deploy.
 - WhatsApp commands:
   - `/help`
   - `/status`
+  - `/tasks`
   - `/memory`
   - `/reset`
   - `/permissions`
@@ -394,7 +395,9 @@ The app can:
 - Install or update SafeClaw.
 - Save `.env` configuration.
 - Run `safeclaw doctor`.
-- Run one-off tasks.
+- Queue tasks from the Run tab. SafeClaw runs one task at a time; when the current task finishes, the next queued task starts automatically.
+- Cancel queued/running tasks and delete task history entries from the Run tab.
+- Keep task history and ask follow-up questions about selected task results.
 - Chat with SafeClaw inside the app interface.
 - Start the WhatsApp webhook.
 - Install, start, stop, and inspect the persistent WhatsApp service.
@@ -930,6 +933,7 @@ WhatsApp commands:
 
 - `/help`
 - `/status`
+- `/tasks`
 - `/memory`
 - `/reset`
 - `/permissions`

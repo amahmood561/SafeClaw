@@ -388,6 +388,68 @@ p {
   line-height: 1.45;
 }
 
+.task-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.task-side {
+  position: sticky;
+  top: 22px;
+}
+
+.task-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-history-empty {
+  padding: 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.task-history-item {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-history-item:hover,
+.task-history-item.active {
+  border-color: #8db89b;
+  background: #f5faf6;
+}
+
+.task-history-item strong,
+.task-history-item span {
+  display: block;
+}
+
+.task-history-item strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-history-item span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .output-panel {
   min-height: calc(100vh - 140px);
 }

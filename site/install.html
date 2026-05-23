@@ -36,9 +36,11 @@
 
     <main class="doc-layout">
       <aside class="sidebar" aria-label="Install sections">
-        <a class="active" href="#quick">Quick install</a>
+        <a class="active" href="#mac-app">Mac app</a>
+        <a href="#quick">Quick install</a>
         <a href="#guided">Guided setup</a>
         <a href="#mac">Mac wizard</a>
+        <a href="#macos-tools">macOS tools</a>
         <a href="#ollama">Ollama</a>
         <a href="#whatsapp">WhatsApp</a>
         <a href="#verify">Verify</a>
@@ -47,6 +49,13 @@
         <p class="section-kicker">Setup</p>
         <h1>Choose the install path that matches your comfort level.</h1>
         <p>SafeClaw can be installed as a quick terminal command, a guided terminal flow, or a double-click Mac setup wizard. The global <code>safeclaw</code> command is opt-in so the installer does not silently modify a user’s shell environment.</p>
+
+        <h2 id="mac-app">Mac app after purchase</h2>
+        <p>The easiest path for most Mac users is the packaged SafeClaw app from Gumroad. Download the DMG, open it, and drag SafeClaw into Applications.</p>
+        <p><a class="button primary" href="https://mahmoodify3.gumroad.com/l/safeclaw">Get SafeClaw on Gumroad</a></p>
+        <p>If macOS keeps blocking the app after you move it into Applications, clear the download quarantine flag:</p>
+        <pre class="code-block" id="install-xattr"><code>xattr -cr /Applications/SafeClaw.app</code></pre>
+        <p><button class="button secondary" data-copy="#install-xattr">Copy Mac unblock command</button></p>
 
         <h2 id="quick">Quick install</h2>
         <p>This installs SafeClaw into <code>~/safeclaw</code>, creates a virtual environment, installs dependencies, copies <code>.env.example</code>, and runs a local CLI check.</p>
@@ -65,6 +74,14 @@
           <div class="step"><span class="step-number">2</span><div><h3>Choose model and safety defaults</h3><p>Enter OpenAI-compatible settings, workspace path, permission profile, approval mode, and shell behavior.</p></div></div>
           <div class="step"><span class="step-number">3</span><div><h3>Optional WhatsApp walkthrough</h3><p>The wizard explains Twilio, public webhook URLs, sender allowlists, and persistent service mode.</p></div></div>
         </div>
+
+        <h2 id="macos-tools">macOS developer tools</h2>
+        <p>If a source install, GitHub install, or setup script says <code>xcode-select: note: No developer tools were found</code>, install Apple Command Line Tools, then rerun the SafeClaw installer.</p>
+        <pre class="code-block" id="install-xcode"><code>xcode-select --install</code></pre>
+        <p><button class="button secondary" data-copy="#install-xcode">Copy developer tools command</button></p>
+        <p>If the popup does not appear, reset the selected developer tools path and try again:</p>
+        <pre class="code-block" id="install-xcode-reset"><code>sudo xcode-select --reset
+xcode-select --install</code></pre>
 
         <h2 id="ollama">Use Ollama locally</h2>
         <p>SafeClaw can use Ollama through its OpenAI-compatible API. Start Ollama, pull a model, then point SafeClaw at the local base URL.</p>

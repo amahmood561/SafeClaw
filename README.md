@@ -947,19 +947,112 @@ For setup instructions and current config status, run:
 safeclaw telegram-setup
 ```
 
-1. Open Telegram and message `@BotFather`.
-2. Create a bot with `/newbot`.
-3. Paste the token into `.env`:
+### Step 1: Create the Telegram bot on your phone
+
+1. Install Telegram on your phone.
+   - iPhone: install **Telegram Messenger** from the App Store.
+   - Android: install **Telegram** from Google Play.
+2. Open Telegram.
+3. Tap the search bar and search for `@BotFather`.
+4. Open the verified BotFather account with the blue check.
+5. Tap **Start**.
+6. Send BotFather:
+
+```text
+/newbot
+```
+
+7. When BotFather asks for a bot display name, use something human-readable:
+
+```text
+SafeClaw
+```
+
+8. When BotFather asks for a username, choose one that ends in `bot`:
+
+```text
+safestclaw_bot
+```
+
+9. BotFather will send a token. It looks like this:
+
+```text
+123456:ABC-your-token
+```
+
+### Step 2: Add the bot token to SafeClaw
+
+In the Mac app:
+
+1. Open the **Phone** tab.
+2. Paste the BotFather token into **Bot token**.
+3. Click **Save Telegram Config**.
+
+Or add it manually to `.env`:
 
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC-your-token
+```
+
+### Step 3: Allow your Telegram account
+
+This keeps random people from using your bot if they find it.
+
+1. In Telegram, search for `@userinfobot`.
+2. Tap **Start**.
+3. Copy the numeric ID it returns, for example:
+
+```text
+123456789
+```
+
+4. In the Mac app, paste that number into **Allowed Telegram users**.
+5. Click **Save Telegram Config**.
+
+Or add it manually to `.env`:
+
+```env
 SAFECLAW_ALLOWED_TELEGRAM_USERS=123456789
 ```
 
-4. Start polling:
+For multiple allowed users, separate IDs with commas:
+
+```env
+SAFECLAW_ALLOWED_TELEGRAM_USERS=123456789,987654321
+```
+
+### Step 4: Start SafeClaw Telegram
+
+In the Mac app:
+
+1. Open the **Phone** tab.
+2. Click **Start Telegram**.
+
+Or start it from Terminal:
 
 ```bash
 safeclaw telegram
+```
+
+### Step 5: Test from your phone
+
+1. Open your new SafeClaw bot in Telegram.
+2. Send:
+
+```text
+/start
+```
+
+3. Then send:
+
+```text
+/help
+```
+
+4. Try a real task:
+
+```text
+show me what tasks i can run
 ```
 
 Each Telegram user gets a persistent session named from their Telegram user ID.

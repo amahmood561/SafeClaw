@@ -293,7 +293,7 @@
         <div class="grid two">
           <div class="panel">
             <h3>Telegram quick setup</h3>
-            <p class="muted">Best for low-friction testing. Create a bot with BotFather, paste the token, and SafeClaw polls from this Mac.</p>
+            <p class="muted">Best for low-friction testing. Install Telegram, create a bot with the verified BotFather account, paste the token, and SafeClaw polls from this Mac.</p>
             <label>Bot token<input id="telegramToken" type="password" autocomplete="off" placeholder="123456:ABC..."></label>
             <label>Allowed Telegram users<input id="allowedTelegramUsers" autocomplete="off" placeholder="123456789,987654321"></label>
             <div class="button-row wrap">
@@ -303,6 +303,20 @@
               <button id="botFatherBtn">Open BotFather</button>
             </div>
           </div>
+          <div class="panel">
+            <h3>First-time Telegram steps</h3>
+            <ol class="setup-checklist">
+              <li>Install Telegram on your phone.</li>
+              <li>Search Telegram for the verified <code>@BotFather</code> account.</li>
+              <li>Tap Start, send <code>/newbot</code>, then choose a display name.</li>
+              <li>Choose a bot username ending in <code>bot</code>, like <code>safestclaw_bot</code>.</li>
+              <li>Paste BotFather's token into Bot token and save.</li>
+              <li>Message <code>@userinfobot</code>, copy your numeric ID, paste it into Allowed Telegram users, and save.</li>
+              <li>Click Start Telegram, then message your new bot with <code>/help</code>.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="grid two">
           <div class="panel">
             <h3>Connection choice</h3>
             <div class="permission-list">
@@ -347,8 +361,9 @@
           <div class="panel">
             <h3>Setup checklist</h3>
             <ol class="setup-checklist">
-              <li>Telegram: create a bot with <code>@BotFather</code>, save the token, then start Telegram polling.</li>
-              <li>Telegram: add your numeric user ID to <code>SAFECLAW_ALLOWED_TELEGRAM_USERS</code> before sharing the bot.</li>
+              <li>Telegram: use the first-time steps above if this is your first bot.</li>
+              <li>Telegram: keep the poller running while you want phone access.</li>
+              <li>Telegram: keep Allowed Telegram users filled before sharing the bot username.</li>
               <li>WhatsApp: save Twilio config and expose this Mac with ngrok or Cloudflare Tunnel.</li>
               <li>WhatsApp: set Twilio incoming webhook to <code>https://your-public-url/whatsapp</code>.</li>
               <li>Install/start the persistent service if you want SafeClaw reachable while you are away.</li>

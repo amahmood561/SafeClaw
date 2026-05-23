@@ -25,13 +25,25 @@ def test_telegram_commands_use_session_helpers(monkeypatch):
     monkeypatch.setattr(telegram, "reset_session", lambda session_id: None)
     monkeypatch.setattr(telegram, "update_session_settings", lambda session_id, model=None, permission_profile=None: f"settings:{session_id}:{model}:{permission_profile}")
 
-    assert "SafeClaw Telegram commands" in telegram._reply_for_message("/help", "42")
+    assert "SafeClaw on Telegram" in telegram._reply_for_message("/help", "42")
     assert "telegram-42" in telegram._reply_for_message("/status", "42")
     assert "memory:telegram-42" == telegram._reply_for_message("/memory", "42")
     assert "Session reset." == telegram._reply_for_message("/reset", "42")
     assert "Permission profile: readonly" == telegram._reply_for_message("/permissions", "42")
     assert "settings:telegram-42:None:workspace-write" == telegram._reply_for_message("/permissions workspace-write", "42")
     assert "settings:telegram-42:gpt-4.1-mini:None" == telegram._reply_for_message("/model gpt-4.1-mini", "42")
+
+
+def test_telegram_task_menu_is_phone_native(monkeypatch):
+    monkeypatch.setattr(telegram, "SAFECLAW_ALLOWED_TELEGRAM_USERS", [])
+    monkeypatch.setattr(telegram, "session_status", lambda session_id: {"permission_profile": "readonly"})
+
+    reply = telegram._reply_for_message("show me what tasks i can run", "42")
+
+    assert "Good phone-safe tasks" in reply
+    assert "summarize my SafeClaw setup" in reply
+    assert "For shell commands or risky changes" in reply
+    assert "sandboxed workspace" not in reply
 
 
 def test_telegram_normal_message_runs_task(monkeypatch):

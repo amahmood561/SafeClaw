@@ -17,21 +17,61 @@ def telegram_setup_status() -> str:
     return f"""
 Telegram setup
 
-1. Open Telegram and message @BotFather.
+Phone steps
 
-2. Create a bot:
+1. Install Telegram on your phone.
+   iPhone: App Store -> Telegram Messenger
+   Android: Google Play -> Telegram
+
+2. Open Telegram and search for @BotFather.
+   Use the verified BotFather account with the blue check.
+
+3. Tap Start, then send:
    /newbot
 
-3. Copy the bot token into .env:
+4. BotFather asks for a display name.
+   Example:
+   SafeClaw
+
+5. BotFather asks for a username.
+   It must end in bot.
+   Example:
+   safestclaw_bot
+
+6. BotFather gives you a bot token.
+   It looks like:
+   123456:ABC-your-token
+
+SafeClaw steps
+
+7. Paste that token into the Mac app:
+   Phone -> Bot token -> Save Telegram Config
+
+   Or put it in .env:
    TELEGRAM_BOT_TOKEN=123456:ABC-your-token
 
-4. Message your bot once from your phone.
+8. Find your numeric Telegram user ID.
+   Easiest path: in Telegram, message @userinfobot.
+   Copy the number it returns.
 
-5. Start SafeClaw Telegram polling:
-   safeclaw telegram
+9. Paste that number into the Mac app:
+   Phone -> Allowed Telegram users -> Save Telegram Config
 
-6. Recommended: restrict who can use the bot:
+   Or put it in .env:
    SAFECLAW_ALLOWED_TELEGRAM_USERS=123456789
+
+Run and test
+
+10. Start Telegram polling:
+    Mac app: Phone -> Start Telegram
+    Terminal: safeclaw telegram
+
+11. Open your new SafeClaw bot in Telegram and send:
+    /start
+
+12. Test it:
+    /help
+    show me what tasks i can run
 
 Current Telegram config:
   TELEGRAM_BOT_TOKEN: {"set" if configured else "missing"}
@@ -54,7 +94,9 @@ Why Telegram is easier:
 
 def _telegram_help() -> str:
     return """
-SafeClaw Telegram commands:
+SafeClaw on Telegram
+
+Commands:
 /help - show commands
 /status - show session status
 /memory - show saved memory
@@ -63,9 +105,59 @@ SafeClaw Telegram commands:
 /permissions PROFILE - set profile for this chat
 /model MODEL_NAME - set this chat model
 
-Send any normal message to ask SafeClaw to help.
-Risky actions that need terminal approval are blocked over Telegram.
+Try:
+- summarize my SafeClaw setup
+- search my workspace for "good"
+- explain my config
+- check what files are in my workspace
+
+Risky actions need the right permission profile. Terminal approvals are not handled inside Telegram yet.
 """.strip()
+
+
+def _task_menu(profile: str = "readonly") -> str:
+    return f"""
+Yes. You can text SafeClaw tasks from Telegram.
+
+Current profile: {profile}
+
+Good phone-safe tasks:
+- summarize my SafeClaw setup
+- search my workspace for "good"
+- list files in my workspace
+- explain my config
+- show my saved memory
+- check what permissions are active
+
+If you enable more permissions:
+- workspace-write: create or edit files
+- network-allow: fetch URLs or search the web
+- db-readonly: inspect configured databases
+- messaging-allow: send approved messages
+
+Commands:
+/status
+/permissions
+/permissions workspace-write
+/help
+
+For shell commands or risky changes, use the Mac app approval flow.
+""".strip()
+
+
+def _is_task_menu_request(text: str) -> bool:
+    lowered = text.lower()
+    phrases = [
+        "what tasks",
+        "show me what tasks",
+        "tasks i can run",
+        "what can you do",
+        "what are you capable",
+        "are you capable",
+        "can you run tasks",
+        "can you do on my computer",
+    ]
+    return any(phrase in lowered for phrase in phrases)
 
 
 def _sender_allowed(sender_id: str) -> bool:
@@ -99,6 +191,9 @@ def _reply_for_message(body: str, sender_id: str) -> str:
     if lowered.startswith(("/model ", "model ")):
         model = text.split(maxsplit=1)[1].strip()
         return update_session_settings(session_id, model=model)
+    if _is_task_menu_request(text):
+        status = session_status(session_id)
+        return _task_menu(status.get("permission_profile") or "readonly")
 
     return run_task(text, session_id=session_id, interactive=False)
 

@@ -18,6 +18,32 @@ Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
 SQLite database tools.
 
+## Product direction
+
+SafeClaw is being built as a local AI agent in the same broad category people
+look at when they search for OpenClaw-style automation, but with a smaller,
+clearer trust model: self-hosted, explicit permissions, local control, and
+inspectable tool use.
+
+The biggest long-term upside is the packaged desktop experience:
+
+- **macOS desktop app** for people who do not want to start from a terminal.
+- **Self-hosted AI agent** that runs on the user's own machine.
+- **Workflow automation assistant** for practical local tasks.
+- **Browser automation** with permission boundaries before anything risky runs.
+- **WhatsApp and Telegram integration** so users can talk to SafeClaw from a
+  phone.
+- **Local Ollama support** for users who want local models instead of hosted
+  APIs.
+- **Tool execution** for files, shell, databases, network fetches, messaging,
+  and project workflows.
+- **Code generation** with safer file editing, patches, backups, and approval
+  prompts.
+- **AI workflows** that can queue tasks, track status, and explain what happened.
+
+The market is people who want the power of a local agent without handing a black
+box broad access to their machine.
+
 ## Community
 
 Use GitHub for setup help, roadmap ideas, safety discussions, WhatsApp

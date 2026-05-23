@@ -18,6 +18,12 @@ Support links point to:
 https://buymeacoffee.com/alifla
 ```
 
+Gumroad release links point to:
+
+```text
+https://mahmoodify3.gumroad.com/l/safeclaw
+```
+
 Community links point to the GitHub repository:
 
 ```text

@@ -12,6 +12,8 @@ GitHub: https://github.com/amahmood561/SafeClaw
 
 Latest macOS DMG: https://github.com/amahmood561/SafeClaw/releases/latest
 
+Get SafeClaw on Gumroad: https://mahmoodify3.gumroad.com/l/safeclaw
+
 Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
 SQLite database tools.
@@ -31,6 +33,10 @@ automation that is useful without being mysterious.
 If you want to support the work, you can buy the team a coffee:
 
 [Buy the team a coffee ☕](https://buymeacoffee.com/alifla)
+
+You can also get the SafeClaw Mac app release on Gumroad:
+
+[Get SafeClaw on Gumroad](https://mahmoodify3.gumroad.com/l/safeclaw)
 
 Support goes toward hosting, domain costs, testing, and continued work on the
 installer, WhatsApp setup, local model support, and permission system.
@@ -314,6 +320,12 @@ The easiest way to try the desktop app on macOS is to download the latest DMG:
 
 ```text
 https://github.com/amahmood561/SafeClaw/releases/latest
+```
+
+You can also get the packaged SafeClaw release from Gumroad:
+
+```text
+https://mahmoodify3.gumroad.com/l/safeclaw
 ```
 
 1. Open the latest release.

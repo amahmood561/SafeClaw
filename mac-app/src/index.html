@@ -140,6 +140,10 @@
               </div>
             </div>
             <div id="approvalTray" class="approval-tray" hidden></div>
+            <details id="toolActivityDrawer" class="tool-activity-drawer">
+              <summary><span>Activity</span><strong id="toolActivityCount">0</strong></summary>
+              <div id="toolActivityList" class="tool-activity-list" aria-live="polite"></div>
+            </details>
             <div id="chatDropZone" class="chat-drop-zone">
               <strong>Drop to attach</strong>
               <span id="dropHint">Files and links become removable attachments before sending.</span>
@@ -285,9 +289,19 @@
             <h2>Talk to SafeClaw over WhatsApp.</h2>
             <p>Configure Twilio in <code>.env</code>, expose <code>/whatsapp</code> with a public HTTPS URL, then run the webhook or persistent service.</p>
           </div>
-          <button id="twilioBtn">Open Twilio</button>
         </div>
         <div class="grid two">
+          <div class="panel">
+            <h3>Twilio config</h3>
+            <label>Account SID<input id="twilioSid" autocomplete="off" placeholder="AC..."></label>
+            <label>Auth token<input id="twilioToken" type="password" autocomplete="off"></label>
+            <label>WhatsApp from<input id="twilioFrom" autocomplete="off" placeholder="whatsapp:+14155238886"></label>
+            <label>Allowed senders<input id="allowedSenders" autocomplete="off" placeholder="whatsapp:+15612367203"></label>
+            <div class="button-row">
+              <button id="saveWhatsappConfigBtn" class="primary">Save WhatsApp Config</button>
+              <button id="twilioBtn">Open Twilio</button>
+            </div>
+          </div>
           <div class="panel">
             <h3>Webhook</h3>
             <label>Port<input id="whatsappPort" autocomplete="off"></label>
@@ -296,6 +310,8 @@
               <button id="whatsappSetupBtn">Show Setup</button>
             </div>
           </div>
+        </div>
+        <div class="grid two">
           <div class="panel">
             <h3>Persistent Mac service</h3>
             <div class="button-row wrap">
@@ -304,6 +320,15 @@
               <button id="serviceStartBtn">Start</button>
               <button id="serviceStopBtn">Stop</button>
             </div>
+          </div>
+          <div class="panel">
+            <h3>Setup checklist</h3>
+            <ol class="setup-checklist">
+              <li>Save Twilio config.</li>
+              <li>Expose this Mac with ngrok or Cloudflare Tunnel.</li>
+              <li>Set Twilio incoming webhook to <code>https://your-public-url/whatsapp</code>.</li>
+              <li>Install/start the persistent service if you want SafeClaw reachable while you are away.</li>
+            </ol>
           </div>
         </div>
       </section>

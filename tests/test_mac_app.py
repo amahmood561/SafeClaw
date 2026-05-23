@@ -60,6 +60,8 @@ def test_electron_app_ui_has_expected_sections():
         "Task Queue",
         "Approval Inbox",
         "WhatsApp",
+        "Save WhatsApp Config",
+        "toolActivityDrawer",
         "Databases",
         "Run Read-only Query",
         "Output",
@@ -106,6 +108,7 @@ def test_electron_chat_fluidity_features_are_wired():
         "sessionList",
         "chatContextBar",
         "approvalTray",
+        "toolActivityList",
         "attachmentDrawer",
         "Run doctor",
         "Remember This",
@@ -130,6 +133,11 @@ def test_electron_chat_fluidity_features_are_wired():
         "Delete failed",
         "sessions.some",
         "renderApprovalCard",
+        "addToolActivity",
+        "tool-activity-drawer",
+        "saveWhatsappConfigBtn",
+        "twilioSid",
+        "allowedSenders",
         "handleStructuredEvent",
         "splitEventLines",
         "provider_error",
@@ -185,6 +193,8 @@ def test_electron_setup_preserves_and_auto_saves_secrets():
     assert "settings.apiKey || existing.OPENAI_API_KEY" in main
     assert "SAFECLAW_PROVIDER_PRESET" in main
     assert "settings.twilioToken || existing.TWILIO_AUTH_TOKEN" in main
+    assert "existing.TWILIO_ACCOUNT_SID" in main
+    assert "existing.SAFECLAW_ALLOWED_SENDERS" in main
     assert "providerPresets" in renderer
     assert "applyProviderPreset" in renderer
     assert "provider-test" in renderer

@@ -194,7 +194,10 @@ ipcMain.handle('save-env', (_event, settings) => {
   const envPath = path.join(settings.installDir, '.env');
   const existing = parseEnvFile(envPath);
   const apiKey = settings.apiKey || existing.OPENAI_API_KEY || '';
+  const twilioSid = settings.twilioSid || existing.TWILIO_ACCOUNT_SID || '';
   const twilioToken = settings.twilioToken || existing.TWILIO_AUTH_TOKEN || '';
+  const twilioFrom = settings.twilioFrom || existing.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+  const allowedSenders = settings.allowedSenders || existing.SAFECLAW_ALLOWED_SENDERS || '';
   const content = [
     '# Use OpenAI-compatible API endpoint',
     `SAFECLAW_PROVIDER_PRESET=${settings.providerPreset || 'custom'}`,
@@ -213,10 +216,10 @@ ipcMain.handle('save-env', (_event, settings) => {
     `SAFECLAW_SQLITE_DATABASES=${settings.sqliteDatabases || ''}`,
     '',
     '# Optional Twilio WhatsApp outbound support.',
-    `TWILIO_ACCOUNT_SID=${settings.twilioSid || ''}`,
+    `TWILIO_ACCOUNT_SID=${twilioSid}`,
     `TWILIO_AUTH_TOKEN=${twilioToken}`,
-    `TWILIO_WHATSAPP_FROM=${settings.twilioFrom || 'whatsapp:+14155238886'}`,
-    `SAFECLAW_ALLOWED_SENDERS=${settings.allowedSenders || ''}`,
+    `TWILIO_WHATSAPP_FROM=${twilioFrom}`,
+    `SAFECLAW_ALLOWED_SENDERS=${allowedSenders}`,
     '',
   ].join('\n');
   fs.writeFileSync(envPath, content, { mode: 0o600 });

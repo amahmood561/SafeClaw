@@ -80,6 +80,7 @@ let activeTaskHadEvents = false;
 let taskProviderErrorActive = false;
 let activeTaskText = '';
 const responseText = new WeakMap();
+let toolActivityCount = 0;
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -101,6 +102,10 @@ function settings() {
     maxToolSteps: '6',
     sqliteDatabases: $('sqliteDatabases').value.trim(),
     whatsappPort: $('whatsappPort').value.trim(),
+    twilioSid: $('twilioSid').value.trim(),
+    twilioToken: $('twilioToken').value,
+    twilioFrom: $('twilioFrom').value.trim(),
+    allowedSenders: $('allowedSenders').value.trim(),
   };
 }
 
@@ -150,10 +155,12 @@ function workspaceDisplay() {
 function updateChatContext() {
   if (!$('chatContextBar')) return;
   const model = $('chatModel').value.trim() || $('model').value.trim() || 'default model';
+  const provider = providerPresets[$('providerPreset').value]?.label || 'Custom provider';
   const profile = $('chatPermission').value || $('permissionProfile').value || 'readonly';
   const approval = $('approvalMode').value || 'ask';
   $('chatContextBar').innerHTML = [
     ['Workspace', workspaceDisplay()],
+    ['Provider', provider],
     ['Permission', profile],
     ['Approval', approval],
     ['Model', model],
@@ -184,6 +191,7 @@ function setJarvisEnabled(enabled) {
 function updateJarvisContext() {
   if (!$('jarvisContext')) return;
   const model = $('chatModel').value.trim() || $('model').value.trim() || 'default model';
+  const provider = providerPresets[$('providerPreset').value]?.label || 'Custom provider';
   const profile = $('chatPermission').value || $('permissionProfile').value || 'readonly';
   const approval = $('approvalMode').value || 'ask';
   const workspace = workspaceDisplay();
@@ -198,6 +206,7 @@ function updateJarvisContext() {
   $('jarvisContext').innerHTML = [
     ['Mode', state],
     ['Workspace', workspace],
+    ['Provider', provider],
     ['Permission', profile],
     ['Approval', approval],
     ['Model', model],
@@ -240,6 +249,10 @@ async function loadEnv() {
   if (env.SAFECLAW_PERMISSION_PROFILE) $('permissionProfile').value = env.SAFECLAW_PERMISSION_PROFILE;
   if (env.SAFECLAW_APPROVAL_MODE) $('approvalMode').value = env.SAFECLAW_APPROVAL_MODE;
   if (env.SAFECLAW_SQLITE_DATABASES) $('sqliteDatabases').value = env.SAFECLAW_SQLITE_DATABASES;
+  if (env.TWILIO_ACCOUNT_SID) $('twilioSid').value = env.TWILIO_ACCOUNT_SID;
+  if (env.TWILIO_AUTH_TOKEN) $('twilioToken').value = env.TWILIO_AUTH_TOKEN;
+  if (env.TWILIO_WHATSAPP_FROM) $('twilioFrom').value = env.TWILIO_WHATSAPP_FROM;
+  if (env.SAFECLAW_ALLOWED_SENDERS) $('allowedSenders').value = env.SAFECLAW_ALLOWED_SENDERS;
   $('allowShell').checked = (env.ALLOW_SHELL || '').toLowerCase() === 'true';
   appendOutput(`Loaded config from ${$('installDir').value}/.env\n`);
 }
@@ -546,6 +559,23 @@ function addResultBlock(parent, type, text) {
   return block;
 }
 
+function addToolActivity(event) {
+  const list = $('toolActivityList');
+  if (!list) return;
+  toolActivityCount += 1;
+  $('toolActivityCount').textContent = String(toolActivityCount);
+  const row = document.createElement('div');
+  row.className = `tool-activity-item ${event.type}`;
+  const title = event.tool || event.type.replaceAll('_', ' ');
+  const detail = event.subject || event.arguments_preview || event.content || event.reason || '';
+  row.innerHTML = `
+    <strong>${escapeHtml(title)}</strong>
+    <span>${escapeHtml(event.type.replaceAll('_', ' '))}</span>
+    ${detail ? `<code>${escapeHtml(String(detail).slice(0, 600))}</code>` : ''}
+  `;
+  list.prepend(row);
+}
+
 function splitEventLines(text) {
   const combined = eventLineBuffer + text;
   const lines = combined.split(/\r?\n/);
@@ -579,16 +609,19 @@ function handleStructuredEvent(event) {
   if (event.type === 'assistant_message' && activeChatResponse && !getResponseText(activeChatResponse).trim()) {
     setResponseText(activeChatResponse, event.content || '');
   }
-  if (['tool_call', 'tool_started', 'tool_result', 'tool_message'].includes(event.type)) {
+  if (['tool_call', 'tool_started', 'tool_result', 'tool_message', 'tool_blocked'].includes(event.type)) {
+    addToolActivity(event);
     return;
   }
   if (event.type === 'tool_error' && activeChatResponse) {
+    addToolActivity(event);
     addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
   }
   if (event.type === 'provider_error' && activeChatResponse) {
     renderProviderError(event);
   }
   if (event.type === 'approval_required') {
+    addToolActivity(event);
     renderApprovalCard(event.tool || 'Action approval', event.subject || event.arguments_preview || '', event);
   }
   if (event.type === 'approval_decision' && activeChatItem) {
@@ -969,6 +1002,9 @@ function resetEmptyChat() {
         <button data-starter="Inspect dropped file">Inspect dropped file</button>
       </div>
     </div>`;
+  toolActivityCount = 0;
+  $('toolActivityCount').textContent = '0';
+  $('toolActivityList').innerHTML = '';
 }
 
 async function handleChatDrop(event) {
@@ -1160,6 +1196,7 @@ function bindEvents() {
   $('jarvisWhatsappSetupBtn').addEventListener('click', () => runSafeClaw(['whatsapp-setup'], 'WhatsApp Setup'));
   $('openRepo').addEventListener('click', () => window.safeclaw.openUrl('https://github.com/amahmood561/SafeClaw'));
   $('twilioBtn').addEventListener('click', () => window.safeclaw.openUrl('https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn'));
+  $('saveWhatsappConfigBtn').addEventListener('click', saveEnv);
   $('startWhatsappBtn').addEventListener('click', () => runSafeClaw(['whatsapp', '--host', '0.0.0.0', '--port', $('whatsappPort').value], 'Start WhatsApp Webhook'));
   $('whatsappSetupBtn').addEventListener('click', () => runSafeClaw(['whatsapp-setup'], 'WhatsApp Setup'));
   $('installServiceBtn').addEventListener('click', () => runSafeClaw(['service-install', '--port', $('whatsappPort').value], 'Install WhatsApp Service'));

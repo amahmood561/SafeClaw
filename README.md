@@ -982,13 +982,21 @@ Available local tools include:
 
 - `list_files(path='.')`
 - `read_file(path)`
+- `read_many_files(paths, max_chars_per_file=12000)`
 - `write_file(path, content, backup=True, overwrite=True)`
+- `create_file(path, content='')`
 - `search_files(query, path='.', include_content=True)`
 - `edit_file(path, old, new, replace_all=False, backup=True)`
 - `apply_patch(patch, backup=True)`
+- `move_file(source, destination, backup=True, overwrite=False)`
+- `delete_file(path, backup=True)`
+- `diff_file(path, proposed_content)`
 - `fetch_url(url)`
 - `web_search(query)`
 - `shell(command)`, disabled unless `ALLOW_SHELL=true`
+- `git_status()`
+- `git_diff(path='')`
+- `run_tests(command='pytest')`, disabled unless `ALLOW_SHELL=true`
 - `send_whatsapp(to, body)`, if Twilio env vars are configured
 
 Available session and memory tools include:

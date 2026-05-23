@@ -118,6 +118,82 @@ def test_search_edit_and_backup_flow():
     assert ".safeclaw_backups" in edited
 
 
+def test_tool_depth_file_operations(workspace):
+    created = run_tool(
+        "create_file",
+        {"path": "notes/a.txt", "content": "alpha"},
+        permission_profile="workspace-write",
+        approval_mode="auto",
+        interactive=False,
+    )
+    assert "Created notes/a.txt" in created
+    assert "Refusing to create existing file" in run_tool(
+        "create_file",
+        {"path": "notes/a.txt", "content": "again"},
+        permission_profile="workspace-write",
+        approval_mode="auto",
+        interactive=False,
+    )
+
+    (workspace / "notes" / "b.txt").write_text("beta")
+    many = run_tool(
+        "read_many_files",
+        {"paths": ["notes/a.txt", "notes/b.txt"]},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "## notes/a.txt" in many
+    assert "alpha" in many
+    assert "## notes/b.txt" in many
+
+    diff = run_tool(
+        "diff_file",
+        {"path": "notes/a.txt", "proposed_content": "alpha\nnew\n"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "--- notes/a.txt" in diff
+    assert "+new" in diff
+
+    moved = run_tool(
+        "move_file",
+        {"source": "notes/a.txt", "destination": "notes/moved.txt"},
+        permission_profile="workspace-write",
+        approval_mode="auto",
+        interactive=False,
+    )
+    assert "Moved notes/a.txt to notes/moved.txt" in moved
+    assert not (workspace / "notes" / "a.txt").exists()
+    assert (workspace / "notes" / "moved.txt").exists()
+
+    deleted = run_tool(
+        "delete_file",
+        {"path": "notes/moved.txt"},
+        permission_profile="workspace-write",
+        approval_mode="auto",
+        interactive=False,
+    )
+    assert "Deleted notes/moved.txt" in deleted
+    assert ".safeclaw_backups" in deleted
+    assert not (workspace / "notes" / "moved.txt").exists()
+
+
+def test_tool_depth_permissions_and_shell_guard(monkeypatch):
+    assert "Blocked by permission profile" in run_tool(
+        "delete_file",
+        {"path": "missing.txt"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "Test execution is disabled" in run_tool(
+        "run_tests",
+        {"command": "pytest"},
+        permission_profile="shell-ask",
+        approval_mode="auto",
+        interactive=False,
+    )
+
+
 def test_memory_lifecycle():
     session = "pytest-memory"
     assert "Memory saved" in remember(session, "blue config")

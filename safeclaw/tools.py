@@ -1,7 +1,9 @@
 import html
+import difflib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -26,10 +28,10 @@ MAX_TOOL_OUTPUT = 12000
 MAX_READ_BYTES = 250000
 INTERNAL_WORKSPACE_DIR_PREFIX = ".safeclaw_"
 
-READ_TOOLS = {"list_files", "read_file", "search_files"}
-WRITE_TOOLS = {"write_file", "edit_file", "apply_patch"}
+READ_TOOLS = {"list_files", "read_file", "read_many_files", "search_files", "diff_file", "git_status", "git_diff"}
+WRITE_TOOLS = {"write_file", "create_file", "edit_file", "apply_patch", "move_file", "delete_file"}
 NETWORK_TOOLS = {"fetch_url", "web_search"}
-SHELL_TOOLS = {"shell"}
+SHELL_TOOLS = {"shell", "run_tests"}
 MESSAGING_TOOLS = {"send_whatsapp"}
 DATABASE_TOOLS = {"list_databases", "test_database", "describe_database", "describe_table", "run_readonly_query"}
 RISKY_TOOLS = WRITE_TOOLS | NETWORK_TOOLS | SHELL_TOOLS | MESSAGING_TOOLS
@@ -110,8 +112,10 @@ def _emit_event(event: dict[str, Any]) -> None:
 def _approval_subject(tool_name: str, arguments: dict[str, Any]) -> str:
     if tool_name == "shell":
         return str(arguments.get("command", ""))
-    if tool_name in {"write_file", "edit_file", "read_file"}:
+    if tool_name in {"write_file", "create_file", "edit_file", "read_file", "delete_file", "diff_file"}:
         return str(arguments.get("path", ""))
+    if tool_name == "move_file":
+        return f"{arguments.get('source', '')} -> {arguments.get('destination', '')}"
     if tool_name == "apply_patch":
         return _preview_arguments({"patch": arguments.get("patch", "")}, limit=700)
     if tool_name == "fetch_url":
@@ -204,6 +208,19 @@ def read_file(path: str) -> str:
     return data.decode(errors="replace") + suffix
 
 
+def read_many_files(paths: list[str], max_chars_per_file: int = 12000) -> str:
+    if not paths:
+        return "No paths provided."
+    blocks = []
+    for path in paths:
+        try:
+            content = read_file(path)
+        except Exception as exc:
+            content = f"Error: {exc}"
+        blocks.append(f"## {path}\n\n{_trim_output(content, max_chars_per_file)}")
+    return "\n\n".join(blocks)
+
+
 def write_file(path: str, content: str, backup: bool = True, overwrite: bool = True) -> str:
     target = safe_path(path)
     backup_message = ""
@@ -216,6 +233,44 @@ def write_file(path: str, content: str, backup: bool = True, overwrite: bool = T
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content)
     return f"Wrote {target.relative_to(WORKSPACE)}.{backup_message}"
+
+
+def create_file(path: str, content: str = "") -> str:
+    target = safe_path(path)
+    if target.exists():
+        return f"Refusing to create existing file: {target.relative_to(WORKSPACE)}"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    return f"Created {target.relative_to(WORKSPACE)}."
+
+
+def move_file(source: str, destination: str, backup: bool = True, overwrite: bool = False) -> str:
+    source_path = safe_path(source)
+    destination_path = safe_path(destination)
+    if not source_path.exists():
+        return f"Not found: {source}"
+    if destination_path.exists():
+        if not overwrite:
+            return f"Refusing to overwrite existing destination: {destination_path.relative_to(WORKSPACE)}"
+        if backup and destination_path.is_file():
+            _backup_file(destination_path)
+    destination_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source_path), str(destination_path))
+    return f"Moved {source_path.relative_to(WORKSPACE)} to {destination_path.relative_to(WORKSPACE)}."
+
+
+def delete_file(path: str, backup: bool = True) -> str:
+    target = safe_path(path)
+    if not target.exists():
+        return f"Not found: {path}"
+    if target.is_dir():
+        return "Refusing to delete a directory with delete_file."
+    backup_message = ""
+    if backup:
+        backup_path = _backup_file(target)
+        backup_message = f" Backup saved to {backup_path.relative_to(WORKSPACE)}."
+    target.unlink()
+    return f"Deleted {target.relative_to(WORKSPACE)}.{backup_message}"
 
 
 def search_files(query: str, path: str = ".", include_content: bool = True, max_results: int = 50) -> str:
@@ -244,6 +299,22 @@ def search_files(query: str, path: str = ".", include_content: bool = True, max_
                 results.append(f"{relative}:{line_no}: {line.strip()[:200]}")
                 break
     return "\n".join(results) or "No matches found."
+
+
+def diff_file(path: str, proposed_content: str) -> str:
+    target = safe_path(path)
+    if target.exists():
+        original = target.read_text(errors="replace").splitlines(keepends=True)
+    else:
+        original = []
+    proposed = proposed_content.splitlines(keepends=True)
+    diff = difflib.unified_diff(
+        original,
+        proposed,
+        fromfile=str(target.relative_to(WORKSPACE)),
+        tofile=f"{target.relative_to(WORKSPACE)} (proposed)",
+    )
+    return "".join(diff) or "No differences."
 
 
 def edit_file(path: str, old: str, new: str, replace_all: bool = False, backup: bool = True) -> str:
@@ -351,6 +422,48 @@ def shell(command: str) -> str:
     return (result.stdout + result.stderr).strip()
 
 
+def git_status() -> str:
+    result = subprocess.run(
+        ["git", "status", "--short"],
+        cwd=WORKSPACE,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    output = (result.stdout + result.stderr).strip()
+    return output or "No git status changes."
+
+
+def git_diff(path: str = "") -> str:
+    command = ["git", "diff", "--"]
+    if path:
+        command.append(str(safe_path(path).relative_to(WORKSPACE)))
+    result = subprocess.run(
+        command,
+        cwd=WORKSPACE,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    output = (result.stdout + result.stderr).strip()
+    return output or "No git diff."
+
+
+def run_tests(command: str = "pytest") -> str:
+    if not ALLOW_SHELL:
+        return "Test execution is disabled. Set ALLOW_SHELL=true to enable."
+    result = subprocess.run(
+        command,
+        shell=True,
+        cwd=WORKSPACE,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    output = (result.stdout + result.stderr).strip()
+    return f"Exit code: {result.returncode}\n{output}"
+
+
 def send_whatsapp(to: str, body: str) -> str:
     if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM):
         return "WhatsApp outbound is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_WHATSAPP_FROM."
@@ -396,6 +509,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "read_many_files",
+            "description": "Read several text files from the workspace with per-file output limits.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "paths": {"type": "array", "items": {"type": "string"}},
+                    "max_chars_per_file": {"type": "integer", "default": 12000},
+                },
+                "required": ["paths"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "write_file",
             "description": "Write text content to a workspace file.",
             "parameters": {
@@ -407,6 +535,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
                     "overwrite": {"type": "boolean", "default": True},
                 },
                 "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_file",
+            "description": "Create a new workspace file, refusing to overwrite existing files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "content": {"type": "string", "default": ""},
+                },
+                "required": ["path"],
             },
         },
     },
@@ -463,6 +606,53 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "move_file",
+            "description": "Move or rename a workspace file. Refuses destination overwrite unless requested.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string"},
+                    "destination": {"type": "string"},
+                    "backup": {"type": "boolean", "default": True},
+                    "overwrite": {"type": "boolean", "default": False},
+                },
+                "required": ["source", "destination"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_file",
+            "description": "Delete one workspace file after approval, creating a backup by default.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "backup": {"type": "boolean", "default": True},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "diff_file",
+            "description": "Show a unified diff between a workspace file and proposed new content.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "proposed_content": {"type": "string"},
+                },
+                "required": ["path", "proposed_content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "fetch_url",
             "description": "Fetch a URL and return a trimmed text response.",
             "parameters": {
@@ -499,6 +689,36 @@ TOOL_SPECS: list[dict[str, Any]] = [
                 "type": "object",
                 "properties": {"command": {"type": "string"}},
                 "required": ["command"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_status",
+            "description": "Run git status --short in the workspace.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_diff",
+            "description": "Run git diff in the workspace, optionally scoped to one workspace path.",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string", "default": ""}},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_tests",
+            "description": "Run a test command in the workspace if ALLOW_SHELL=true and shell permissions allow it.",
+            "parameters": {
+                "type": "object",
+                "properties": {"command": {"type": "string", "default": "pytest"}},
             },
         },
     },
@@ -593,13 +813,21 @@ def run_tool(
     functions = {
         "list_files": list_files,
         "read_file": read_file,
+        "read_many_files": read_many_files,
         "write_file": write_file,
+        "create_file": create_file,
         "search_files": search_files,
         "edit_file": edit_file,
         "apply_patch": apply_patch,
+        "move_file": move_file,
+        "delete_file": delete_file,
+        "diff_file": diff_file,
         "fetch_url": fetch_url,
         "web_search": web_search,
         "shell": shell,
+        "git_status": git_status,
+        "git_diff": git_diff,
+        "run_tests": run_tests,
         "send_whatsapp": send_whatsapp,
         "list_databases": list_databases,
         "test_database": test_database,
@@ -634,13 +862,21 @@ def available_tools() -> str:
 Available local tools:
 - list_files(path='.')
 - read_file(path)
+- read_many_files(paths, max_chars_per_file=12000)
 - write_file(path, content, backup=True, overwrite=True)
+- create_file(path, content='')
 - search_files(query, path='.', include_content=True)
 - edit_file(path, old, new, replace_all=False, backup=True)
 - apply_patch(patch, backup=True)
+- move_file(source, destination, backup=True, overwrite=False)
+- delete_file(path, backup=True)
+- diff_file(path, proposed_content)
 - fetch_url(url)
 - web_search(query)
 - shell(command) disabled unless ALLOW_SHELL=true
+- git_status()
+- git_diff(path='')
+- run_tests(command='pytest') disabled unless ALLOW_SHELL=true
 - send_whatsapp(to, body) if Twilio env vars are configured
 - list_databases()
 - test_database(name)

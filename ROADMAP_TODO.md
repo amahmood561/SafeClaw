@@ -89,15 +89,15 @@ the missing pieces to close the gap.
 
 ### Tool Depth
 
-- [ ] Add `read_many_files`.
-- [ ] Add `create_file`.
-- [ ] Add `move_file`.
-- [ ] Add `delete_file` with approval and backup behavior.
-- [ ] Add `diff_file`.
-- [ ] Add `git_status`.
-- [ ] Add `git_diff`.
+- [x] Add `read_many_files`.
+- [x] Add `create_file`.
+- [x] Add `move_file`.
+- [x] Add `delete_file` with approval and backup behavior.
+- [x] Add `diff_file`.
+- [x] Add `git_status`.
+- [x] Add `git_diff`.
 - [ ] Add `git_commit` with approval.
-- [ ] Add `run_tests`.
+- [x] Add `run_tests`.
 - [ ] Add `install_package` with approval.
 - [ ] Add document/PDF parsing.
 - [ ] Add browser/search tools only after permissions are strong enough.
@@ -105,7 +105,7 @@ the missing pieces to close the gap.
 
 ### Approval UX
 
-- [ ] Render approval cards with exact file path, command, URL, or WhatsApp recipient.
+- [x] Render approval cards with exact file path, command, URL, or WhatsApp recipient.
 - [ ] Show before/after file diffs before writes and patches.
 - [ ] Support allow once, deny, and always allow for this session through structured CLI events.
 - [ ] Add "why does SafeClaw need this?" explanations.
@@ -124,7 +124,7 @@ the missing pieces to close the gap.
 ### Fluid Chat and Artifacts
 
 - [ ] Add stop, retry, regenerate, and continue controls everywhere.
-- [ ] Add collapsible tool logs.
+- [x] Add collapsible tool logs.
 - [ ] Add artifact cards for plans, file diffs, command results, errors, memories, exports, and timelines.
 - [ ] Add conversation search.
 - [ ] Make session history feel native and persistent.
@@ -133,12 +133,12 @@ the missing pieces to close the gap.
 ### WhatsApp Companion
 
 - [ ] Add a full WhatsApp setup wizard in the Mac app.
-- [ ] Add Twilio fields directly in the WhatsApp tab.
-- [ ] Add webhook URL guidance and tunnel setup guidance.
+- [x] Add Twilio fields directly in the WhatsApp tab.
+- [x] Add webhook URL guidance and tunnel setup guidance.
 - [ ] Add service status indicator.
 - [ ] Add test message button.
 - [ ] Add sender allowlist editor.
-- [ ] Keep the persistent background service easy to install, start, stop, and inspect.
+- [x] Keep the persistent background service easy to install, start, stop, and inspect.
 - [ ] Add "message me when task is done" for long-running tasks.
 
 ### Jarvis Mode

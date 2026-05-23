@@ -514,6 +514,7 @@ The guided installer does this for you:
 The generated `.env` includes:
 
 ```env
+SAFECLAW_PROVIDER_PRESET=openai
 OPENAI_API_KEY=
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4.1-mini
@@ -524,6 +525,41 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 ```
+
+### Model provider presets
+
+SafeClaw uses OpenAI-compatible `/chat/completions` APIs today. The Mac app and
+CLI include presets for common endpoints:
+
+| Preset | Base URL | Example model | Notes |
+|---|---|---|---|
+| `openai` | `https://api.openai.com/v1` | `gpt-4.1-mini` | Best tested path for tools and streaming. |
+| `ollama` | `http://localhost:11434/v1` | `llama3.1` | Local model path. Use API key `ollama`. |
+| `groq` | `https://api.groq.com/openai/v1` | `openai/gpt-oss-20b` | Fast hosted models; tool support depends on model. |
+| `openrouter` | `https://openrouter.ai/api/v1` | `anthropic/claude-3.5-sonnet` | Recommended Claude route without native Anthropic support. |
+| `litellm` | `http://localhost:4000/v1` | `anthropic/claude-3-5-sonnet-latest` | Use your own OpenAI-compatible gateway. |
+| `custom` | user supplied | user supplied | Must support `/chat/completions`. |
+
+Claude works through OpenRouter or LiteLLM:
+
+```env
+SAFECLAW_PROVIDER_PRESET=openrouter
+OPENAI_API_KEY=your_openrouter_key
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=anthropic/claude-3.5-sonnet
+```
+
+Verify a provider from Terminal:
+
+```bash
+safeclaw provider-presets
+safeclaw provider-test
+```
+
+`provider-test` checks whether the configured base URL, API key, and model can
+answer a basic OpenAI-compatible chat-completions request. Tool calling is still
+model/provider dependent, so if a provider can chat but fails tools, switch to a
+model that supports OpenAI-style tool calls.
 
 After guided setup, start using SafeClaw:
 

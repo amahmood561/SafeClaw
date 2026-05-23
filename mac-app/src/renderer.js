@@ -11,6 +11,44 @@ const permissionProfiles = [
 ];
 
 const approvalModes = ['ask', 'deny', 'auto'];
+const providerPresets = {
+  openai: {
+    label: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4.1-mini',
+    hint: 'Best tested path for SafeClaw tool calling and streaming.',
+  },
+  ollama: {
+    label: 'Ollama',
+    baseUrl: 'http://localhost:11434/v1',
+    model: 'llama3.1',
+    hint: 'Local OpenAI-compatible endpoint. Use API key "ollama".',
+  },
+  groq: {
+    label: 'Groq',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    model: 'openai/gpt-oss-20b',
+    hint: 'Fast OpenAI-compatible endpoint. Save your Groq key as OPENAI_API_KEY.',
+  },
+  openrouter: {
+    label: 'OpenRouter / Claude',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: 'anthropic/claude-3.5-sonnet',
+    hint: 'Recommended route for Claude. Save your OpenRouter key as OPENAI_API_KEY.',
+  },
+  litellm: {
+    label: 'LiteLLM gateway',
+    baseUrl: 'http://localhost:4000/v1',
+    model: 'anthropic/claude-3-5-sonnet-latest',
+    hint: 'Use this when running your own OpenAI-compatible LiteLLM proxy.',
+  },
+  custom: {
+    label: 'Custom OpenAI-compatible',
+    baseUrl: '',
+    model: '',
+    hint: 'Use any provider that supports /chat/completions.',
+  },
+};
 const textAttachmentLimit = 120000;
 const textPreviewLimit = 40000;
 const hugeFileLimit = 2 * 1024 * 1024;
@@ -52,6 +90,7 @@ function settings() {
     installDir: $('installDir').value.trim(),
     repoUrl: $('repoUrl').value.trim(),
     ref: $('ref').value.trim(),
+    providerPreset: $('providerPreset').value,
     apiKey: $('apiKey').value,
     baseUrl: $('baseUrl').value.trim(),
     model: $('model').value.trim(),
@@ -63,6 +102,29 @@ function settings() {
     sqliteDatabases: $('sqliteDatabases').value.trim(),
     whatsappPort: $('whatsappPort').value.trim(),
   };
+}
+
+function inferProviderPreset(baseUrl) {
+  const normalized = (baseUrl || '').replace(/\/$/, '');
+  for (const [id, preset] of Object.entries(providerPresets)) {
+    if (preset.baseUrl && preset.baseUrl.replace(/\/$/, '') === normalized) return id;
+  }
+  return 'custom';
+}
+
+function updateProviderHint() {
+  const preset = providerPresets[$('providerPreset').value] || providerPresets.custom;
+  $('providerHint').innerHTML = `${escapeHtml(preset.hint)} Click <strong>Save Config</strong> after changing credentials.`;
+}
+
+function applyProviderPreset() {
+  const preset = providerPresets[$('providerPreset').value] || providerPresets.custom;
+  if (preset.baseUrl) $('baseUrl').value = preset.baseUrl;
+  if (preset.model) $('model').value = preset.model;
+  if ($('providerPreset').value === 'ollama' && !$('apiKey').value) $('apiKey').value = 'ollama';
+  updateProviderHint();
+  updateChatContext();
+  updateJarvisContext();
 }
 
 function appendOutput(text) {
@@ -172,6 +234,8 @@ async function loadEnv() {
   if (env.OPENAI_API_KEY) $('apiKey').value = env.OPENAI_API_KEY;
   if (env.OPENAI_BASE_URL) $('baseUrl').value = env.OPENAI_BASE_URL;
   if (env.OPENAI_MODEL) $('model').value = env.OPENAI_MODEL;
+  $('providerPreset').value = env.SAFECLAW_PROVIDER_PRESET || inferProviderPreset($('baseUrl').value);
+  updateProviderHint();
   if (env.WORKSPACE) $('workspace').value = env.WORKSPACE;
   if (env.SAFECLAW_PERMISSION_PROFILE) $('permissionProfile').value = env.SAFECLAW_PERMISSION_PROFILE;
   if (env.SAFECLAW_APPROVAL_MODE) $('approvalMode').value = env.SAFECLAW_APPROVAL_MODE;
@@ -969,6 +1033,8 @@ function bindEvents() {
   $('saveConfigBtn').addEventListener('click', saveEnv);
   $('loadConfigBtn').addEventListener('click', loadEnv);
   $('doctorBtn').addEventListener('click', () => runSafeClaw(['doctor'], 'Run Doctor'));
+  $('providerPreset').addEventListener('change', applyProviderPreset);
+  $('providerTestBtn').addEventListener('click', () => runSafeClaw(['provider-test'], 'Provider Test'));
   $('openFolderBtn').addEventListener('click', () => window.safeclaw.openPath(settings().installDir));
   $('runTaskBtn').addEventListener('click', runTaskInPanel);
   $('toolsBtn').addEventListener('click', showToolsInPanel);
@@ -1205,6 +1271,10 @@ async function init() {
   setOptions($('permissionProfile'), permissionProfiles);
   setOptions($('chatPermission'), permissionProfiles);
   setOptions($('approvalMode'), approvalModes);
+  setOptions($('providerPreset'), Object.entries(providerPresets).map(([id, preset]) => `${id}:${preset.label}`));
+  $('providerPreset').innerHTML = Object.entries(providerPresets)
+    .map(([id, preset]) => `<option value="${id}">${preset.label}</option>`)
+    .join('');
   await loadDefaults();
   await loadEnv().catch(() => {});
   bindEvents();

@@ -19,6 +19,8 @@ def test_help_lists_all_commands():
         "run",
         "chat",
         "tools",
+        "provider-presets",
+        "provider-test",
         "doctor",
         "sessions",
         "status",
@@ -147,6 +149,47 @@ def test_tools_command_shows_available_tools(monkeypatch):
 
     assert result.exit_code == 0
     assert "tool-list" in result.output
+
+
+def test_provider_presets_command_lists_claude_route():
+    result = invoke("provider-presets")
+
+    assert result.exit_code == 0
+    assert "openrouter" in result.output
+    assert "Claude" in result.output or "claude" in result.output
+    assert "LiteLLM" in result.output
+
+
+def test_provider_test_command_success(monkeypatch):
+    monkeypatch.setattr(
+        cli,
+        "run_provider_test",
+        lambda base_url=None, model=None: {
+            "ok": True,
+            "base_url": base_url or "https://api.openai.com/v1",
+            "model": model or "gpt-4.1-mini",
+            "content": "safeclaw-ok",
+        },
+    )
+
+    result = invoke("provider-test", "--base-url", "https://example.test/v1", "--model", "m")
+
+    assert result.exit_code == 0
+    assert "Provider test passed" in result.output
+    assert "https://example.test/v1" in result.output
+    assert "m" in result.output
+
+
+def test_provider_test_command_failure(monkeypatch):
+    def fail_provider_test(*_args, **_kwargs):
+        raise LLMError("bad provider", status_code=401)
+
+    monkeypatch.setattr(cli, "run_provider_test", fail_provider_test)
+    result = invoke("provider-test")
+
+    assert result.exit_code == 1
+    assert "Provider error" in result.output
+    assert "bad provider" in result.output
 
 
 def test_doctor_command_prints_summary(monkeypatch):

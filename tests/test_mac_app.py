@@ -48,6 +48,8 @@ def test_electron_app_ui_has_expected_sections():
 
     for text in [
         "Install / Update",
+        "Provider preset",
+        "Test Provider",
         "Run Task",
         "taskResult",
         "taskResultBody",
@@ -181,7 +183,11 @@ def test_electron_setup_preserves_and_auto_saves_secrets():
 
     assert "parseEnvFile" in main
     assert "settings.apiKey || existing.OPENAI_API_KEY" in main
+    assert "SAFECLAW_PROVIDER_PRESET" in main
     assert "settings.twilioToken || existing.TWILIO_AUTH_TOKEN" in main
+    assert "providerPresets" in renderer
+    assert "applyProviderPreset" in renderer
+    assert "provider-test" in renderer
     assert "saveConfigAfterInstall" in renderer
     assert "payload.id === 'install'" in renderer
     assert "saveEnv().then(loadEnv)" in renderer

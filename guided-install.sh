@@ -6,6 +6,7 @@ INSTALL_DIR_DEFAULT="$HOME/safeclaw"
 REF_DEFAULT="main"
 BASE_URL_DEFAULT="https://api.openai.com/v1"
 MODEL_DEFAULT="gpt-4.1-mini"
+PROVIDER_PRESET_DEFAULT="openai"
 WORKSPACE_DEFAULT="./workspace"
 PERMISSION_PROFILE_DEFAULT="readonly"
 APPROVAL_MODE_DEFAULT="ask"
@@ -137,9 +138,11 @@ write_env() {
   local twilio_token="${11}"
   local twilio_from="${12}"
   local allowed_senders="${13}"
+  local provider_preset="${14:-custom}"
 
   cat > "$env_file" <<EOF
 # Use OpenAI-compatible API endpoint
+SAFECLAW_PROVIDER_PRESET=$provider_preset
 OPENAI_API_KEY=$api_key
 OPENAI_BASE_URL=$base_url
 OPENAI_MODEL=$model
@@ -198,8 +201,25 @@ LLM settings
 SafeClaw uses an OpenAI-compatible API. Leave the key blank if you want to add
 it later in the .env file.
 
+Provider presets:
+  openai     https://api.openai.com/v1
+  ollama     http://localhost:11434/v1
+  groq       https://api.groq.com/openai/v1
+  openrouter https://openrouter.ai/api/v1, useful for Claude
+  litellm    http://localhost:4000/v1
+  custom     enter your own OpenAI-compatible endpoint
+
 EOF
 
+provider_preset="$(prompt "Provider preset: openai, ollama, groq, openrouter, litellm, custom" "$PROVIDER_PRESET_DEFAULT")"
+case "$provider_preset" in
+  openai) BASE_URL_DEFAULT="https://api.openai.com/v1"; MODEL_DEFAULT="gpt-4.1-mini" ;;
+  ollama) BASE_URL_DEFAULT="http://localhost:11434/v1"; MODEL_DEFAULT="llama3.1" ;;
+  groq) BASE_URL_DEFAULT="https://api.groq.com/openai/v1"; MODEL_DEFAULT="openai/gpt-oss-20b" ;;
+  openrouter) BASE_URL_DEFAULT="https://openrouter.ai/api/v1"; MODEL_DEFAULT="anthropic/claude-3.5-sonnet" ;;
+  litellm) BASE_URL_DEFAULT="http://localhost:4000/v1"; MODEL_DEFAULT="anthropic/claude-3-5-sonnet-latest" ;;
+  *) provider_preset="custom" ;;
+esac
 api_key="$(prompt_secret "OpenAI API key, hidden input, optional")"
 base_url="$(prompt "OpenAI-compatible base URL" "$BASE_URL_DEFAULT")"
 model="$(prompt "Model" "$MODEL_DEFAULT")"
@@ -279,7 +299,7 @@ if [ -f .env ]; then
 fi
 
 info "Writing .env"
-write_env ".env" "$api_key" "$base_url" "$model" "$workspace" "$allow_shell" "$permission_profile" "$approval_mode" "$max_tool_steps" "$twilio_sid" "$twilio_token" "$twilio_from" "$allowed_senders"
+write_env ".env" "$api_key" "$base_url" "$model" "$workspace" "$allow_shell" "$permission_profile" "$approval_mode" "$max_tool_steps" "$twilio_sid" "$twilio_token" "$twilio_from" "$allowed_senders" "$provider_preset"
 
 info "Checking SafeClaw CLI"
 .venv/bin/safeclaw tools

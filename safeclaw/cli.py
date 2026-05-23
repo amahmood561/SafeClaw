@@ -27,7 +27,8 @@ from .service import (
 )
 from .tools import available_tools
 from .config import WORKSPACE
-from .llm import LLMError
+from .llm import LLMError, provider_test as run_provider_test
+from .providers import provider_presets_text
 from .whatsapp import serve_whatsapp, whatsapp_setup_status
 
 app = typer.Typer(help="SafeClaw: a self-hosted agent with explicit permissions")
@@ -110,6 +111,24 @@ def chat(session: str = "default", model: str = "", permission_profile: str = ""
 def tools():
     """Show available tools."""
     console.print(available_tools())
+
+@app.command("provider-presets")
+def provider_presets():
+    """Show supported OpenAI-compatible provider presets."""
+    console.print(provider_presets_text(), markup=False)
+
+@app.command("provider-test")
+def provider_test(base_url: str = "", model: str = ""):
+    """Test the configured OpenAI-compatible model provider."""
+    try:
+        result = run_provider_test(base_url=base_url or None, model=model or None)
+    except LLMError as exc:
+        _print_provider_error(exc)
+        raise typer.Exit(1)
+    console.print("Provider test passed")
+    console.print(f"Base URL: {result['base_url']}")
+    console.print(f"Model: {result['model']}")
+    console.print(f"Response: {result['content']}")
 
 @app.command("doctor")
 def doctor(port: int = 8080, strict: bool = False):

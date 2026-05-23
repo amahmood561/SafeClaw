@@ -197,6 +197,7 @@ ipcMain.handle('save-env', (_event, settings) => {
   const twilioToken = settings.twilioToken || existing.TWILIO_AUTH_TOKEN || '';
   const content = [
     '# Use OpenAI-compatible API endpoint',
+    `SAFECLAW_PROVIDER_PRESET=${settings.providerPreset || 'custom'}`,
     `OPENAI_API_KEY=${apiKey}`,
     `OPENAI_BASE_URL=${settings.baseUrl || DEFAULTS.baseUrl}`,
     `OPENAI_MODEL=${settings.model || DEFAULTS.model}`,

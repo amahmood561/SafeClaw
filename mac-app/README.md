@@ -9,6 +9,8 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 
 - Install or update SafeClaw into `~/safeclaw` by default.
 - Save a local `.env` file.
+- Pick provider presets for OpenAI, Ollama, Groq, OpenRouter/Claude, LiteLLM, or a custom OpenAI-compatible endpoint.
+- Test the configured provider from the app before running tasks.
 - Run `safeclaw doctor`.
 - Run one-off SafeClaw tasks.
 - Chat with SafeClaw inside the app interface.
@@ -31,10 +33,22 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 3. Run `npm install`.
 4. Run `npm start`.
 5. Click **Install / Update**.
-6. Add API/model/workspace settings.
+6. Choose a provider preset and add API/model/workspace settings.
 7. Click **Save Config**.
-8. Click **Run Doctor**.
-9. Turn on **Jarvis mode** when you want the higher-level command center instead of the standard Chat view.
+8. Click **Test Provider**.
+9. Click **Run Doctor**.
+10. Turn on **Jarvis mode** when you want the higher-level command center instead of the standard Chat view.
+
+## Claude setup
+
+SafeClaw does not call Anthropic's native API yet. To use Claude today, choose
+**OpenRouter / Claude** or **LiteLLM gateway** in the provider preset selector.
+The app saves those values into the normal OpenAI-compatible fields:
+
+```env
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+OPENAI_MODEL=anthropic/claude-3.5-sonnet
+```
 
 ## Build a macOS app bundle
 

@@ -101,6 +101,8 @@ def test_electron_chat_supports_dropped_files_and_links():
     assert "text/uri-list" in renderer
     assert "file.text()" in renderer
     assert "textAttachmentLimit" in renderer
+    assert "attachmentKind" in renderer
+    assert "load_attachment(path)" in renderer
     assert "attachment-chip" in styles
     assert "dragging-chat" in styles
 

@@ -178,6 +178,45 @@ def test_tool_depth_file_operations(workspace):
     assert not (workspace / "notes" / "moved.txt").exists()
 
 
+def test_load_attachment_supports_docs_images_and_videos(workspace):
+    (workspace / "docs").mkdir()
+    (workspace / "docs" / "note.md").write_text("# Hello\n\nSafeClaw docs")
+    doc = run_tool(
+        "load_attachment",
+        {"path": "docs/note.md"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "Kind: document" in doc
+    assert "SafeClaw docs" in doc
+
+    (workspace / "image.png").write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        b"\x00\x00\x00\rIHDR"
+        b"\x00\x00\x00\x02"
+        b"\x00\x00\x00\x03"
+        b"\x08\x02\x00\x00\x00"
+    )
+    image = run_tool(
+        "load_attachment",
+        {"path": "image.png"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "Kind: image" in image
+    assert "Dimensions: 2x3" in image
+
+    (workspace / "clip.mp4").write_bytes(b"\x00\x00\x00\x18ftypmp42")
+    video = run_tool(
+        "load_attachment",
+        {"path": "clip.mp4"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "Kind: video" in video
+    assert "video bytes are not embedded" in video
+
+
 def test_tool_depth_permissions_and_shell_guard(monkeypatch):
     assert "Blocked by permission profile" in run_tool(
         "delete_file",

@@ -1,5 +1,6 @@
 import html
 import difflib
+import mimetypes
 import json
 import os
 import re
@@ -28,8 +29,16 @@ from .config import (
 MAX_TOOL_OUTPUT = 12000
 MAX_READ_BYTES = 250000
 INTERNAL_WORKSPACE_DIR_PREFIX = ".safeclaw_"
+TEXT_ATTACHMENT_EXTENSIONS = {
+    ".csv", ".json", ".log", ".md", ".markdown", ".txt", ".yaml", ".yml", ".toml", ".xml",
+    ".html", ".css", ".js", ".jsx", ".ts", ".tsx", ".py", ".rb", ".go", ".rs", ".java",
+    ".c", ".cpp", ".h", ".hpp", ".sh", ".zsh", ".sql",
+}
+DOCUMENT_EXTENSIONS = TEXT_ATTACHMENT_EXTENSIONS | {".pdf", ".doc", ".docx", ".rtf", ".odt"}
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".heic"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".avi", ".mkv", ".mpeg", ".mpg"}
 
-READ_TOOLS = {"list_files", "read_file", "read_many_files", "search_files", "diff_file", "git_status", "git_diff"}
+READ_TOOLS = {"list_files", "read_file", "read_many_files", "load_attachment", "search_files", "diff_file", "git_status", "git_diff"}
 WRITE_TOOLS = {"write_file", "create_file", "edit_file", "apply_patch", "move_file", "delete_file"}
 NETWORK_TOOLS = {"fetch_url", "web_search"}
 SHELL_TOOLS = {"shell", "run_tests"}
@@ -113,7 +122,7 @@ def _emit_event(event: dict[str, Any]) -> None:
 def _approval_subject(tool_name: str, arguments: dict[str, Any]) -> str:
     if tool_name == "shell":
         return str(arguments.get("command", ""))
-    if tool_name in {"write_file", "create_file", "edit_file", "read_file", "delete_file", "diff_file"}:
+    if tool_name in {"write_file", "create_file", "edit_file", "read_file", "load_attachment", "delete_file", "diff_file"}:
         return str(arguments.get("path", ""))
     if tool_name == "move_file":
         return f"{arguments.get('source', '')} -> {arguments.get('destination', '')}"
@@ -222,6 +231,90 @@ def read_many_files(paths: list[str], max_chars_per_file: int = 12000) -> str:
             content = f"Error: {exc}"
         blocks.append(f"## {path}\n\n{_trim_output(content, max_chars_per_file)}")
     return "\n\n".join(blocks)
+
+
+def _image_dimensions(data: bytes) -> str:
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
+        width = int.from_bytes(data[16:20], "big")
+        height = int.from_bytes(data[20:24], "big")
+        return f"{width}x{height}"
+    if data.startswith(b"GIF8") and len(data) >= 10:
+        width = int.from_bytes(data[6:8], "little")
+        height = int.from_bytes(data[8:10], "little")
+        return f"{width}x{height}"
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        vp8x = data.find(b"VP8X")
+        if vp8x != -1 and len(data) >= vp8x + 18:
+            width = int.from_bytes(data[vp8x + 12:vp8x + 15] + b"\x00", "little") + 1
+            height = int.from_bytes(data[vp8x + 15:vp8x + 18] + b"\x00", "little") + 1
+            return f"{width}x{height}"
+    if data.startswith(b"\xff\xd8"):
+        index = 2
+        while index + 9 < len(data):
+            if data[index] != 0xFF:
+                index += 1
+                continue
+            marker = data[index + 1]
+            block_len = int.from_bytes(data[index + 2:index + 4], "big")
+            if marker in {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}:
+                height = int.from_bytes(data[index + 5:index + 7], "big")
+                width = int.from_bytes(data[index + 7:index + 9], "big")
+                return f"{width}x{height}"
+            index += 2 + max(block_len, 1)
+    return "unknown"
+
+
+def _attachment_kind(path: Path, mime_type: str | None) -> str:
+    ext = path.suffix.lower()
+    if ext in IMAGE_EXTENSIONS or (mime_type or "").startswith("image/"):
+        return "image"
+    if ext in VIDEO_EXTENSIONS or (mime_type or "").startswith("video/"):
+        return "video"
+    if ext in DOCUMENT_EXTENSIONS or (mime_type or "").startswith(("text/", "application/pdf")):
+        return "document"
+    return "file"
+
+
+def load_attachment(path: str, max_text_chars: int = 12000) -> str:
+    target = safe_path(path)
+    if not target.exists():
+        return f"Not found: {path}"
+    if not target.is_file():
+        return f"Not a file: {path}"
+
+    data = target.read_bytes()
+    relative = target.relative_to(WORKSPACE)
+    mime_type, _encoding = mimetypes.guess_type(str(target))
+    kind = _attachment_kind(target, mime_type)
+    ext = target.suffix.lower()
+    lines = [
+        f"Attachment: {relative}",
+        f"Kind: {kind}",
+        f"MIME: {mime_type or 'unknown'}",
+        f"Size: {len(data)} bytes",
+    ]
+
+    if kind == "image":
+        lines.append(f"Dimensions: {_image_dimensions(data[:65536])}")
+        lines.append("Content: binary image data is not embedded in the text prompt. Use this metadata plus the local path unless a vision-capable API path is added.")
+        return "\n".join(lines)
+
+    if kind == "video":
+        lines.append("Content: video bytes are not embedded in the text prompt. Use this metadata plus the local path; frame extraction/transcription is not implemented yet.")
+        return "\n".join(lines)
+
+    if ext in TEXT_ATTACHMENT_EXTENSIONS or (mime_type or "").startswith("text/"):
+        text = data.decode(errors="replace")
+        lines.append("Content preview:")
+        lines.append(_trim_output(text, max_text_chars))
+        return "\n".join(lines)
+
+    if ext == ".pdf":
+        lines.append("Content: PDF text extraction is not implemented yet. Use the local path as a reference or convert the PDF to text first.")
+        return "\n".join(lines)
+
+    lines.append("Content: binary/unsupported document. Use the local path as a reference or convert it to text first.")
+    return "\n".join(lines)
 
 
 def write_file(path: str, content: str, backup: bool = True, overwrite: bool = True) -> str:
@@ -540,6 +633,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "load_attachment",
+            "description": "Load a dropped document, image, video, or file reference from the workspace. Text documents return previews; images and videos return safe metadata.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "max_text_chars": {"type": "integer", "default": 12000},
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "write_file",
             "description": "Write text content to a workspace file.",
             "parameters": {
@@ -845,6 +953,7 @@ def run_tool(
         "list_files": list_files,
         "read_file": read_file,
         "read_many_files": read_many_files,
+        "load_attachment": load_attachment,
         "write_file": write_file,
         "create_file": create_file,
         "search_files": search_files,
@@ -895,6 +1004,7 @@ Available local tools:
 - list_files(path='.')
 - read_file(path)
 - read_many_files(paths, max_chars_per_file=12000)
+- load_attachment(path, max_text_chars=12000)
 - write_file(path, content, backup=True, overwrite=True)
 - create_file(path, content='')
 - search_files(query, path='.', include_content=True)

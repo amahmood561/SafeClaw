@@ -158,6 +158,8 @@ injects the analytics beacon into `site-dist/` only during deploy.
 
 - `list_files`.
 - `read_file`.
+- `read_many_files`.
+- `load_attachment` for dropped documents, images, and videos.
 - `write_file`.
 - `search_files`.
 - `edit_file`.
@@ -1160,6 +1162,7 @@ Available local tools include:
 - `list_files(path='.')`
 - `read_file(path)`
 - `read_many_files(paths, max_chars_per_file=12000)`
+- `load_attachment(path, max_text_chars=12000)`
 - `write_file(path, content, backup=True, overwrite=True)`
 - `create_file(path, content='')`
 - `search_files(query, path='.', include_content=True)`

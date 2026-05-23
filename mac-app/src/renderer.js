@@ -940,6 +940,15 @@ function isLikelyTextFile(file) {
   return /\.(csv|json|log|md|markdown|txt|yaml|yml|toml|xml|html|css|js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|h|hpp|sh|zsh|sql)$/i.test(file.name);
 }
 
+function attachmentKind(file) {
+  const type = file.type || '';
+  const name = file.name || '';
+  if (type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|tiff?|heic)$/i.test(name)) return 'image';
+  if (type.startsWith('video/') || /\.(mp4|mov|m4v|webm|avi|mkv|mpe?g)$/i.test(name)) return 'video';
+  if (/\.(pdf|docx?|rtf|odt|md|markdown|txt|csv|json|yaml|yml|xml|html)$/i.test(name)) return 'document';
+  return 'file';
+}
+
 function isOutsideWorkspace(filePath) {
   if (!filePath) return false;
   const workspace = workspaceDisplay();
@@ -1012,6 +1021,7 @@ function attachmentPrompt() {
       `Attachment ${index + 1}: file`,
       `Name: ${attachment.name}`,
       `Path: ${attachment.path || 'Unavailable from drag event'}`,
+      `Kind: ${attachment.attachmentKind || 'file'}`,
       `Type: ${attachment.type || 'unknown'}`,
       `Size: ${formatBytes(attachment.size)}`,
       `Send mode: ${attachment.mode || 'reference'}`,
@@ -1023,7 +1033,8 @@ function attachmentPrompt() {
       lines.push('Content preview:', attachment.preview);
       if (attachment.truncated) lines.push('[Preview truncated]');
     } else {
-      lines.push('Content preview: not included. Treat this as a local file reference unless the user asks to inspect it.');
+      lines.push('Content preview: not included.');
+      lines.push('SafeClaw can inspect workspace file references with load_attachment(path), including documents, images, and videos as safe local metadata/text previews.');
     }
     return lines.join('\n');
   });
@@ -1050,6 +1061,7 @@ async function addDroppedFiles(files) {
       path: window.safeclaw.filePath ? window.safeclaw.filePath(file) : file.path,
       type: file.type,
       size: file.size,
+      attachmentKind: attachmentKind(file),
       preview: '',
       truncated: false,
       mode: 'reference',

@@ -61,6 +61,120 @@ smoother file/link workflows.
 - [ ] Add true token streaming from the model layer instead of only streaming process stdout chunks.
 - [ ] Add richer diff/file renderers once the CLI emits structured result events.
 
+## Next: OpenClaw-Style Power and Fluidity
+
+SafeClaw should not try to become the biggest agent platform. It should become
+the local agent that feels powerful, fast, and safe enough to trust. These are
+the missing pieces to close the gap.
+
+### Provider Polish
+
+- [x] Add provider presets for OpenAI, Ollama, Groq, OpenRouter, LiteLLM, and custom OpenAI-compatible endpoints.
+- [x] Add `safeclaw provider-presets`.
+- [x] Add `safeclaw provider-test`.
+- [ ] Add native Anthropic/Claude adapter.
+- [ ] Add native Ollama model discovery.
+- [ ] Detect model capabilities: tool calling, streaming, vision, context size.
+- [ ] Add fallback model configuration for outages, quota errors, and slow providers.
+- [ ] Improve provider error recovery with fix buttons in the Mac app.
+
+### Agent Planning
+
+- [ ] Add plan-before-action mode.
+- [ ] Show task steps before running tools.
+- [ ] Let users approve or edit the plan before execution.
+- [ ] Execute plan steps one by one with visible progress.
+- [ ] Retry failed steps with clear explanation.
+- [ ] Summarize what changed at the end of every task.
+
+### Tool Depth
+
+- [ ] Add `read_many_files`.
+- [ ] Add `create_file`.
+- [ ] Add `move_file`.
+- [ ] Add `delete_file` with approval and backup behavior.
+- [ ] Add `diff_file`.
+- [ ] Add `git_status`.
+- [ ] Add `git_diff`.
+- [ ] Add `git_commit` with approval.
+- [ ] Add `run_tests`.
+- [ ] Add `install_package` with approval.
+- [ ] Add document/PDF parsing.
+- [ ] Add browser/search tools only after permissions are strong enough.
+- [ ] Add image/file attachment understanding.
+
+### Approval UX
+
+- [ ] Render approval cards with exact file path, command, URL, or WhatsApp recipient.
+- [ ] Show before/after file diffs before writes and patches.
+- [ ] Support allow once, deny, and always allow for this session through structured CLI events.
+- [ ] Add "why does SafeClaw need this?" explanations.
+- [ ] Add an approval/audit trail per session.
+- [ ] Add a panic switch to disable shell, network, and messaging actions.
+
+### Memory and Workspace Awareness
+
+- [ ] Add memory search UI.
+- [ ] Add edit/delete memory UI.
+- [ ] Add memory scopes: global, workspace, session, contact.
+- [ ] Add "remember this?" chips after useful answers.
+- [ ] Add a memory privacy view.
+- [ ] Always show current workspace, indexed file count, permission profile, model provider, and last tool used.
+
+### Fluid Chat and Artifacts
+
+- [ ] Add stop, retry, regenerate, and continue controls everywhere.
+- [ ] Add collapsible tool logs.
+- [ ] Add artifact cards for plans, file diffs, command results, errors, memories, exports, and timelines.
+- [ ] Add conversation search.
+- [ ] Make session history feel native and persistent.
+- [ ] Keep raw logs in Output, never in the main response unless requested.
+
+### WhatsApp Companion
+
+- [ ] Add a full WhatsApp setup wizard in the Mac app.
+- [ ] Add Twilio fields directly in the WhatsApp tab.
+- [ ] Add webhook URL guidance and tunnel setup guidance.
+- [ ] Add service status indicator.
+- [ ] Add test message button.
+- [ ] Add sender allowlist editor.
+- [ ] Keep the persistent background service easy to install, start, stop, and inspect.
+- [ ] Add "message me when task is done" for long-running tasks.
+
+### Jarvis Mode
+
+- [ ] Implement real push-to-talk voice input.
+- [ ] Add local Whisper or `whisper.cpp` transcription option.
+- [ ] Add transcript preview before sending.
+- [ ] Add optional text-to-speech responses.
+- [ ] Add background task queue persistence.
+- [ ] Add desktop notifications.
+- [ ] Add WhatsApp handoff when the user walks away.
+- [ ] Add task status dashboard and daily summaries.
+
+### Installer and Onboarding
+
+- [ ] Build a real double-click Mac installer flow.
+- [ ] Add provider setup wizard with validation.
+- [ ] Add Ollama install and model download flow.
+- [ ] Add doctor fix buttons.
+- [ ] Add "try sample task" button.
+- [ ] Make first run require no terminal for non-dev users.
+
+### Legal Workflow Ideas
+
+- [ ] Add matter mode: `safeclaw matter create`.
+- [ ] Add matter intake questionnaire.
+- [ ] Add contract review with source-grounded summaries.
+- [ ] Add contract comparison/redline assistant.
+- [ ] Add litigation timeline builder.
+- [ ] Add discovery/evidence index.
+- [ ] Add deposition prep outline generator.
+- [ ] Add client update drafter.
+- [ ] Add billing narrative helper.
+- [ ] Add local clause library.
+- [ ] Add legal-specific permission profiles such as `legal-readonly`, `legal-workspace-write`, and `legal-no-network`.
+
 ### Implementation Notes
 
 - Keep raw CLI logs in the Output tab.

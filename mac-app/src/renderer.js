@@ -78,6 +78,7 @@ let activeTaskResult = false;
 let activeTaskResultId = '';
 let activeTaskHadEvents = false;
 let taskProviderErrorActive = false;
+let loadingSession = false;
 let activeTaskText = '';
 const responseText = new WeakMap();
 let toolActivityCount = 0;
@@ -554,6 +555,48 @@ function addChatMessage(role, text = '', state = 'done') {
   return { item, body };
 }
 
+function sessionUserText(content = '') {
+  const text = String(content || '');
+  const match = text.match(/(?:^|\n)User task:\n([\s\S]*)$/);
+  return (match ? match[1] : text).trim();
+}
+
+function renderSessionMessages(session) {
+  const messages = Array.isArray(session?.messages) ? session.messages : [];
+  $('chatMessages').innerHTML = '';
+  toolActivityCount = 0;
+  $('toolActivityCount').textContent = '0';
+  $('toolActivityList').innerHTML = '';
+
+  const visibleMessages = messages
+    .filter((message) => ['user', 'assistant'].includes(message.role))
+    .map((message) => ({
+      role: message.role === 'assistant' ? 'assistant' : 'user',
+      content: message.role === 'user' ? sessionUserText(message.content) : String(message.content || '').trim(),
+    }))
+    .filter((message) => message.content);
+
+  if (!visibleMessages.length) {
+    resetEmptyChat();
+    return;
+  }
+
+  for (const message of visibleMessages) {
+    addChatMessage(message.role, message.content, 'done');
+  }
+}
+
+async function loadChatSession(sessionId = chatSessionId()) {
+  loadingSession = true;
+  const result = await window.safeclaw.loadSession(settings(), sessionId).catch((error) => ({ ok: false, error: error.message }));
+  loadingSession = false;
+  if (!result.ok) {
+    appendOutput(`Load session failed: ${result.error}\n`);
+    return;
+  }
+  renderSessionMessages(result.session);
+}
+
 function addResultBlock(parent, type, text) {
   const block = document.createElement('pre');
   block.className = `result-block ${type}`;
@@ -846,6 +889,7 @@ async function refreshSessions() {
     $('chatSession').value = current;
     updateChatContext();
     updateJarvisContext();
+    await loadChatSession(current);
   }
   for (const session of sessions) {
     const item = document.createElement('button');
@@ -857,6 +901,7 @@ async function refreshSessions() {
       $('chatSession').value = session.id;
       updateChatContext();
       updateJarvisContext();
+      await loadChatSession(session.id);
       await refreshSessions();
     });
     list.appendChild(item);
@@ -1106,6 +1151,7 @@ function bindEvents() {
     updateChatContext();
     updateJarvisContext();
     await refreshSessions();
+    await loadChatSession(newId);
   });
   $('deleteSessionBtn').addEventListener('click', async () => {
     const session = chatSessionId();
@@ -1116,6 +1162,7 @@ function bindEvents() {
     updateChatContext();
     updateJarvisContext();
     await refreshSessions();
+    await loadChatSession('desktop');
   });
   ['dragenter', 'dragover'].forEach((name) => {
     $('chat').addEventListener(name, (event) => {
@@ -1152,13 +1199,14 @@ function bindEvents() {
   $('chatSession').addEventListener('input', () => {
     updateChatContext();
     updateJarvisContext();
-    refreshSessions();
+    if (!loadingSession) refreshSessions();
   });
   $('chatStatusBtn').addEventListener('click', () => runSafeClaw(currentSessionArgs('status'), 'Session Status'));
   $('chatMemoryBtn').addEventListener('click', () => runSafeClaw(currentSessionArgs('memory'), 'Session Memory'));
   $('chatResetBtn').addEventListener('click', async () => {
     await runSafeClaw(currentSessionArgs('reset'), 'Reset Session');
-    refreshSessions();
+    await refreshSessions();
+    await loadChatSession(chatSessionId());
   });
   $('rememberBtn').addEventListener('click', () => {
     const note = $('memoryNote').value.trim() || lastMemoryTarget;
@@ -1333,6 +1381,7 @@ async function init() {
   renderJarvisApprovals();
   renderAttachments();
   await refreshSessions();
+  await loadChatSession(chatSessionId());
 }
 
 init();

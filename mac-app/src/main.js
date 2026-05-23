@@ -297,6 +297,37 @@ ipcMain.handle('list-sessions', (_event, settings) => {
   return sessions;
 });
 
+ipcMain.handle('load-session', (_event, settings, sessionId) => {
+  const filePath = sessionFile(settings, sessionId);
+  if (!fs.existsSync(filePath)) {
+    return {
+      ok: true,
+      session: {
+        id: sessionId || 'desktop',
+        model: '',
+        permissionProfile: '',
+        messages: [],
+        updatedAt: '',
+      },
+    };
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return {
+      ok: true,
+      session: {
+        id: data.id || sessionId,
+        model: data.model || '',
+        permissionProfile: data.permission_profile || '',
+        messages: Array.isArray(data.messages) ? data.messages : [],
+        updatedAt: data.updated_at || '',
+      },
+    };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+});
+
 ipcMain.handle('rename-session', (_event, settings, oldId, newId) => {
   const oldPath = sessionFile(settings, oldId);
   const newPath = sessionFile(settings, newId);

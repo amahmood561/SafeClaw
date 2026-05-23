@@ -123,15 +123,18 @@ def test_electron_chat_fluidity_features_are_wired():
     ]:
         assert text in html
 
-    for text in ["list-sessions", "rename-session", "delete-session", "approve-command"]:
+    for text in ["list-sessions", "load-session", "rename-session", "delete-session", "approve-command"]:
         assert text in main
     assert "SAFECLAW_EVENT_STREAM" in main
 
-    for text in ["sessions", "renameSession", "deleteSession", "approve"]:
+    for text in ["sessions", "loadSession", "renameSession", "deleteSession", "approve"]:
         assert text in preload
 
     for text in [
         "refreshSessions",
+        "loadChatSession",
+        "renderSessionMessages",
+        "sessionUserText",
         "Delete failed",
         "sessions.some",
         "renderApprovalCard",

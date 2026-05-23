@@ -426,38 +426,62 @@ p {
   font-size: 14px;
 }
 
-.task-result-body p {
+.task-result-body p,
+.chat-body.rendered-response p {
   margin: 0 0 12px;
   color: var(--ink);
 }
 
 .task-result-body h2,
 .task-result-body h3,
-.task-result-body h4 {
+.task-result-body h4,
+.chat-body.rendered-response h2,
+.chat-body.rendered-response h3,
+.chat-body.rendered-response h4 {
   margin: 18px 0 10px;
+  line-height: 1.2;
 }
 
 .task-result-body h2:first-child,
 .task-result-body h3:first-child,
-.task-result-body h4:first-child {
+.task-result-body h4:first-child,
+.chat-body.rendered-response h2:first-child,
+.chat-body.rendered-response h3:first-child,
+.chat-body.rendered-response h4:first-child {
   margin-top: 0;
 }
 
 .task-result-body ul,
-.task-result-body ol {
+.task-result-body ol,
+.chat-body.rendered-response ul,
+.chat-body.rendered-response ol {
   margin: 0 0 14px;
   padding-left: 22px;
 }
 
-.task-result-body li + li {
+.task-result-body li + li,
+.chat-body.rendered-response li + li {
   margin-top: 5px;
 }
 
-.task-result-body hr {
+.task-result-body hr,
+.chat-body.rendered-response hr {
   height: 1px;
   margin: 18px 0;
   border: 0;
   background: var(--line);
+}
+
+.markdown-code {
+  overflow: auto;
+  margin: 12px 0 16px;
+  padding: 13px;
+  border-radius: 12px;
+  color: #e9f2ec;
+  background: linear-gradient(180deg, #111916, #0d1311);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .markdown-table-wrap {
@@ -752,9 +776,20 @@ body.dragging-chat .chat-drop-zone {
   border-radius: 12px;
   color: var(--ink);
   background: white;
-  white-space: pre-wrap;
   line-height: 1.5;
   box-shadow: 0 1px 2px rgba(20, 28, 25, 0.04);
+}
+
+.chat-body:not(.rendered-response) {
+  white-space: pre-wrap;
+}
+
+.chat-body.rendered-response {
+  line-height: 1.58;
+}
+
+.chat-body.rendered-response .markdown-table {
+  min-width: 560px;
 }
 
 .result-block {

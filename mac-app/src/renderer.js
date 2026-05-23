@@ -41,6 +41,7 @@ let activeTaskResultId = '';
 let activeTaskHadEvents = false;
 let taskProviderErrorActive = false;
 let activeTaskText = '';
+const responseText = new WeakMap();
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -233,7 +234,9 @@ function escapeHtml(text) {
 
 function inlineMarkdown(text) {
   return escapeHtml(fixMojibake(text))
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
@@ -252,6 +255,16 @@ function renderMarkdownLite(text) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     if (!line.trim()) continue;
+    if (/^```/.test(line.trim())) {
+      const code = [];
+      index += 1;
+      while (index < lines.length && !/^```/.test(lines[index].trim())) {
+        code.push(lines[index]);
+        index += 1;
+      }
+      html.push(`<pre class="markdown-code"><code>${escapeHtml(fixMojibake(code.join('\n')))}</code></pre>`);
+      continue;
+    }
     if (/^\s*-{3,}\s*$/.test(line)) {
       html.push('<hr>');
       continue;
@@ -297,11 +310,31 @@ function renderMarkdownLite(text) {
   return html.join('');
 }
 
+function setResponseText(node, text) {
+  const clean = fixMojibake(text);
+  responseText.set(node, clean);
+  node.classList.add('rendered-response');
+  node.innerHTML = clean.trim() ? renderMarkdownLite(clean) : '';
+  node.scrollTop = node.scrollHeight;
+}
+
+function appendResponseText(node, text) {
+  const next = `${responseText.get(node) || ''}${text || ''}`;
+  setResponseText(node, next);
+}
+
+function getResponseText(node) {
+  return responseText.get(node) || node.textContent || '';
+}
+
 function renderTaskResultText() {
   const body = $('taskResultBody');
-  body.innerHTML = activeTaskText.trim()
-    ? renderMarkdownLite(activeTaskText)
-    : '<div class="result-placeholder">Waiting for SafeClaw...</div>';
+  if (activeTaskText.trim()) {
+    setResponseText(body, activeTaskText);
+  } else {
+    responseText.set(body, '');
+    body.innerHTML = '<div class="result-placeholder">Waiting for SafeClaw...</div>';
+  }
   body.scrollTop = body.scrollHeight;
 }
 
@@ -429,7 +462,11 @@ function addChatMessage(role, text = '', state = 'done') {
   label.appendChild(stateNode);
   const body = document.createElement('div');
   body.className = 'chat-body';
-  body.textContent = text;
+  if (role === 'assistant') {
+    setResponseText(body, text);
+  } else {
+    body.textContent = fixMojibake(text);
+  }
   item.append(label, body);
   $('chatMessages').appendChild(item);
   $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
@@ -472,11 +509,11 @@ function handleStructuredEvent(event) {
     if (activeChatItem) setMessageState(activeChatItem, 'running');
   }
   if (event.type === 'assistant_delta' && activeChatResponse) {
-    activeChatResponse.textContent += event.content || '';
+    appendResponseText(activeChatResponse, event.content || '');
     $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
   }
-  if (event.type === 'assistant_message' && activeChatResponse && !activeChatResponse.textContent.trim()) {
-    activeChatResponse.textContent = event.content || '';
+  if (event.type === 'assistant_message' && activeChatResponse && !getResponseText(activeChatResponse).trim()) {
+    setResponseText(activeChatResponse, event.content || '');
   }
   if (['tool_call', 'tool_started', 'tool_result', 'tool_message'].includes(event.type)) {
     return;
@@ -505,7 +542,7 @@ function renderProviderError(event) {
   const fix = event.code === 'insufficient_quota' || event.error_type === 'insufficient_quota'
     ? '\n\nFix: check OpenAI API billing/quota at https://platform.openai.com/settings/organization/billing/overview'
     : '';
-  activeChatResponse.textContent = `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`;
+  setResponseText(activeChatResponse, `Provider error: ${event.message || 'The model provider rejected the request.'}${fix}`);
   if (activeChatItem) setMessageState(activeChatItem, 'failed');
   setStatus('Provider error', 'error');
 }
@@ -1110,7 +1147,7 @@ function bindEvents() {
       if (providerError) {
         renderProviderError(providerError);
       } else {
-        activeChatResponse.textContent += visibleText;
+        appendResponseText(activeChatResponse, visibleText);
         detectApproval(visibleText);
       }
       $('chatMessages').scrollTop = $('chatMessages').scrollHeight;

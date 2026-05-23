@@ -196,7 +196,7 @@ def update_session_settings(
 ) -> str:
     session = load_session(session_id)
     changes = []
-    valid_profiles = {"readonly", "workspace-write", "network-allow", "shell-ask", "shell-allow", "messaging-allow"}
+    valid_profiles = {"readonly", "workspace-write", "network-allow", "shell-ask", "shell-allow", "messaging-allow", "db-readonly"}
     if model is not None:
         session["model"] = model or None
         changes.append("model")

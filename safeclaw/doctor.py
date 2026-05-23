@@ -13,7 +13,9 @@ from .config import (
     MAX_TOOL_STEPS,
     MODEL,
     PERMISSION_PROFILE,
+    SAFECLAW_ALLOWED_TELEGRAM_USERS,
     SAFECLAW_ALLOWED_SENDERS,
+    TELEGRAM_BOT_TOKEN,
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_WHATSAPP_FROM,
@@ -22,7 +24,7 @@ from .config import (
 from .service import LABEL
 
 
-VALID_PROFILES = {"readonly", "workspace-write", "network-allow", "shell-ask", "shell-allow", "messaging-allow"}
+VALID_PROFILES = {"readonly", "workspace-write", "network-allow", "shell-ask", "shell-allow", "messaging-allow", "db-readonly"}
 VALID_APPROVAL_MODES = {"ask", "deny", "auto"}
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -159,6 +161,24 @@ def run_doctor(port: int = 8080) -> list[Check]:
             _status(bool(SAFECLAW_ALLOWED_SENDERS), warning=True),
             ", ".join(SAFECLAW_ALLOWED_SENDERS) if SAFECLAW_ALLOWED_SENDERS else "not set",
             "Set SAFECLAW_ALLOWED_SENDERS=whatsapp:+15551234567 to restrict webhook access." if not SAFECLAW_ALLOWED_SENDERS else "",
+        )
+    )
+
+    checks.append(
+        Check(
+            "Telegram bot",
+            _status(bool(TELEGRAM_BOT_TOKEN), warning=True),
+            "configured" if TELEGRAM_BOT_TOKEN else "not configured",
+            "Set TELEGRAM_BOT_TOKEN for Telegram phone access." if not TELEGRAM_BOT_TOKEN else "",
+        )
+    )
+
+    checks.append(
+        Check(
+            "Allowed Telegram users",
+            _status(bool(SAFECLAW_ALLOWED_TELEGRAM_USERS), warning=True),
+            ", ".join(SAFECLAW_ALLOWED_TELEGRAM_USERS) if SAFECLAW_ALLOWED_TELEGRAM_USERS else "not set",
+            "Set SAFECLAW_ALLOWED_TELEGRAM_USERS=123456789 to restrict bot access." if not SAFECLAW_ALLOWED_TELEGRAM_USERS else "",
         )
     )
 

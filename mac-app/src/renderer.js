@@ -57,7 +57,7 @@ const viewTitles = {
   run: 'Run SafeClaw',
   chat: 'Chat',
   jarvis: 'Jarvis Mode',
-  whatsapp: 'WhatsApp',
+  whatsapp: 'Phone',
   database: 'Databases',
   logs: 'Output',
 };
@@ -106,6 +106,8 @@ function settings() {
     twilioToken: $('twilioToken').value,
     twilioFrom: $('twilioFrom').value.trim(),
     allowedSenders: $('allowedSenders').value.trim(),
+    telegramToken: $('telegramToken').value,
+    allowedTelegramUsers: $('allowedTelegramUsers').value.trim(),
   };
 }
 
@@ -253,6 +255,8 @@ async function loadEnv() {
   if (env.TWILIO_AUTH_TOKEN) $('twilioToken').value = env.TWILIO_AUTH_TOKEN;
   if (env.TWILIO_WHATSAPP_FROM) $('twilioFrom').value = env.TWILIO_WHATSAPP_FROM;
   if (env.SAFECLAW_ALLOWED_SENDERS) $('allowedSenders').value = env.SAFECLAW_ALLOWED_SENDERS;
+  if (env.TELEGRAM_BOT_TOKEN) $('telegramToken').value = env.TELEGRAM_BOT_TOKEN;
+  if (env.SAFECLAW_ALLOWED_TELEGRAM_USERS) $('allowedTelegramUsers').value = env.SAFECLAW_ALLOWED_TELEGRAM_USERS;
   $('allowShell').checked = (env.ALLOW_SHELL || '').toLowerCase() === 'true';
   appendOutput(`Loaded config from ${$('installDir').value}/.env\n`);
 }
@@ -628,6 +632,9 @@ function handleStructuredEvent(event) {
     setMessageState(activeChatItem, event.decision === 'allowed' ? 'running' : 'stopped');
   }
   if (event.type === 'task_done') {
+    if (activeChatResponse && !getResponseText(activeChatResponse).trim() && event.content) {
+      setResponseText(activeChatResponse, event.content);
+    }
     setStatus('Done', 'ok');
     if (activeChatItem) setMessageState(activeChatItem, 'done');
   }
@@ -1196,6 +1203,10 @@ function bindEvents() {
   $('jarvisWhatsappSetupBtn').addEventListener('click', () => runSafeClaw(['whatsapp-setup'], 'WhatsApp Setup'));
   $('openRepo').addEventListener('click', () => window.safeclaw.openUrl('https://github.com/amahmood561/SafeClaw'));
   $('twilioBtn').addEventListener('click', () => window.safeclaw.openUrl('https://console.twilio.com/us1/develop/sms/try-it-out/whatsapp-learn'));
+  $('botFatherBtn').addEventListener('click', () => window.safeclaw.openUrl('https://t.me/BotFather'));
+  $('saveTelegramConfigBtn').addEventListener('click', saveEnv);
+  $('startTelegramBtn').addEventListener('click', () => runSafeClaw(['telegram'], 'Start Telegram Bot'));
+  $('telegramSetupBtn').addEventListener('click', () => runSafeClaw(['telegram-setup'], 'Telegram Setup'));
   $('saveWhatsappConfigBtn').addEventListener('click', saveEnv);
   $('startWhatsappBtn').addEventListener('click', () => runSafeClaw(['whatsapp', '--host', '0.0.0.0', '--port', $('whatsappPort').value], 'Start WhatsApp Webhook'));
   $('whatsappSetupBtn').addEventListener('click', () => runSafeClaw(['whatsapp-setup'], 'WhatsApp Setup'));

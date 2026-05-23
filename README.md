@@ -125,6 +125,22 @@ injects the analytics beacon into `site-dist/` only during deploy.
   - `/permissions readonly`
   - `/model gpt-4.1-mini`
 
+### Telegram
+
+- Telegram bot polling for the fastest phone setup.
+- `safeclaw telegram`.
+- `safeclaw telegram-setup`.
+- No public webhook, Twilio number, ngrok, or Cloudflare Tunnel required.
+- User allowlist with `SAFECLAW_ALLOWED_TELEGRAM_USERS`.
+- Telegram commands:
+  - `/help`
+  - `/status`
+  - `/memory`
+  - `/reset`
+  - `/permissions`
+  - `/permissions readonly`
+  - `/model gpt-4.1-mini`
+
 ### Persistent background mode
 
 - macOS LaunchAgent service.
@@ -238,6 +254,8 @@ injects the analytics beacon into `site-dist/` only during deploy.
 - `safeclaw db-query`
 - `safeclaw whatsapp`
 - `safeclaw whatsapp-setup`
+- `safeclaw telegram`
+- `safeclaw telegram-setup`
 - `safeclaw service-install`
 - `safeclaw service-start`
 - `safeclaw service-stop`
@@ -713,12 +731,13 @@ root.
 | `safeclaw/__init__.py` | Package marker. | Lets Python import SafeClaw as a package. |
 | `safeclaw/config.py` | Environment/config loader. | Loads API settings, model name, workspace path, shell flag, permission profile, approval mode, Twilio credentials, and WhatsApp sender allowlist. |
 | `safeclaw/database.py` | Read-only database connector. | Loads allowlisted SQLite databases, checks workspace-safe paths, describes schemas/tables, tests connections, and runs capped read-only queries. |
-| `safeclaw/cli.py` | Typer command-line interface. | Powers `safeclaw run`, `chat`, `tools`, sessions, memory commands, export/import, WhatsApp setup, and persistent service commands. |
+| `safeclaw/cli.py` | Typer command-line interface. | Powers `safeclaw run`, `chat`, `tools`, sessions, memory commands, export/import, WhatsApp, Telegram, and persistent service commands. |
 | `safeclaw/agent.py` | Main agent loop. | Builds task context, sends messages to the LLM, handles structured tool calls, saves logs, remembers session state, and auto-compacts long sessions. |
 | `safeclaw/llm.py` | OpenAI-compatible LLM client. | Sends chat-completion requests to `OPENAI_BASE_URL`, supports structured tool calls, and validates missing API keys. |
 | `safeclaw/tools.py` | Local tool system and safety gate. | Provides file tools, search/edit/patch tools, URL/web tools, shell, WhatsApp sending, workspace path protection, permission profiles, and approval prompts. |
 | `safeclaw/sessions.py` | Session and memory storage. | Saves conversations, JSON-backed memories, memory search/edit/forget, session status, compaction, export/import, and per-session model/permission settings. |
 | `safeclaw/whatsapp.py` | Twilio WhatsApp webhook. | Receives WhatsApp messages, maps senders to sessions, supports `/help`, `/status`, `/memory`, `/reset`, `/permissions`, `/model`, and sender allowlist checks. |
+| `safeclaw/telegram.py` | Telegram bot polling. | Polls Telegram Bot API, maps users to sessions, supports `/help`, `/status`, `/memory`, `/reset`, `/permissions`, `/model`, and Telegram user allowlist checks. |
 | `safeclaw/service.py` | Persistent macOS service helper. | Installs, starts, stops, checks, and uninstalls a LaunchAgent that keeps the WhatsApp webhook running after login. |
 
 ### Runtime workspace folders
@@ -917,6 +936,47 @@ WhatsApp commands:
 - `/permissions readonly`
 - `/model gpt-4.1-mini`
 
+## Telegram
+
+Telegram is the quickest phone connection for most testers because it uses bot
+polling. You do not need Twilio, a public webhook, ngrok, or Cloudflare Tunnel.
+
+For setup instructions and current config status, run:
+
+```bash
+safeclaw telegram-setup
+```
+
+1. Open Telegram and message `@BotFather`.
+2. Create a bot with `/newbot`.
+3. Paste the token into `.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC-your-token
+SAFECLAW_ALLOWED_TELEGRAM_USERS=123456789
+```
+
+4. Start polling:
+
+```bash
+safeclaw telegram
+```
+
+Each Telegram user gets a persistent session named from their Telegram user ID.
+`SAFECLAW_ALLOWED_TELEGRAM_USERS` is strongly recommended. If it is set, only
+those numeric Telegram user IDs can use your SafeClaw bot. If it is blank,
+anyone who can message the bot can talk to it.
+
+Telegram commands:
+
+- `/help`
+- `/status`
+- `/memory`
+- `/reset`
+- `/permissions`
+- `/permissions readonly`
+- `/model gpt-4.1-mini`
+
 ### Persistent WhatsApp mode on macOS
 
 If you want to walk away from your computer and keep receiving/replying through
@@ -998,6 +1058,7 @@ Available local tools include:
 - `git_diff(path='')`
 - `run_tests(command='pytest')`, disabled unless `ALLOW_SHELL=true`
 - `send_whatsapp(to, body)`, if Twilio env vars are configured
+- `send_telegram(chat_id, body)`, if `TELEGRAM_BOT_TOKEN` is configured
 
 Available session and memory tools include:
 
@@ -1028,7 +1089,7 @@ SafeClaw also supports enforced permission profiles:
 - `network-allow`: `readonly` plus `fetch_url` and `web_search`.
 - `shell-ask`: `readonly` plus `shell`, with approval and `ALLOW_SHELL=true`.
 - `shell-allow`: `readonly` plus `shell`, without approval, and `ALLOW_SHELL=true`.
-- `messaging-allow`: `readonly` plus `send_whatsapp`.
+- `messaging-allow`: `readonly` plus `send_whatsapp` and `send_telegram`.
 
 Set the default profile in `.env`:
 

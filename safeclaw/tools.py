@@ -18,6 +18,7 @@ from .config import (
     ALLOW_SHELL,
     APPROVAL_MODE,
     PERMISSION_PROFILE,
+    TELEGRAM_BOT_TOKEN,
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
     TWILIO_WHATSAPP_FROM,
@@ -32,7 +33,7 @@ READ_TOOLS = {"list_files", "read_file", "read_many_files", "search_files", "dif
 WRITE_TOOLS = {"write_file", "create_file", "edit_file", "apply_patch", "move_file", "delete_file"}
 NETWORK_TOOLS = {"fetch_url", "web_search"}
 SHELL_TOOLS = {"shell", "run_tests"}
-MESSAGING_TOOLS = {"send_whatsapp"}
+MESSAGING_TOOLS = {"send_whatsapp", "send_telegram"}
 DATABASE_TOOLS = {"list_databases", "test_database", "describe_database", "describe_table", "run_readonly_query"}
 RISKY_TOOLS = WRITE_TOOLS | NETWORK_TOOLS | SHELL_TOOLS | MESSAGING_TOOLS
 EVENT_PREFIX = "SAFECLAW_EVENT "
@@ -124,6 +125,8 @@ def _approval_subject(tool_name: str, arguments: dict[str, Any]) -> str:
         return str(arguments.get("query", ""))
     if tool_name == "send_whatsapp":
         return f"{arguments.get('to', '')}: {str(arguments.get('body', ''))[:160]}"
+    if tool_name == "send_telegram":
+        return f"{arguments.get('chat_id', '')}: {str(arguments.get('body', ''))[:160]}"
     return _preview_arguments(arguments)
 
 
@@ -135,7 +138,7 @@ def _approval_reason(tool_name: str) -> str:
     if tool_name in NETWORK_TOOLS:
         return "This action can fetch data from the network."
     if tool_name in MESSAGING_TOOLS:
-        return "This action can send a WhatsApp message outside this machine."
+        return "This action can send a message outside this machine."
     return "This action requires explicit approval."
 
 
@@ -482,6 +485,19 @@ def send_whatsapp(to: str, body: str) -> str:
     return "WhatsApp message sent."
 
 
+def send_telegram(chat_id: str, body: str) -> str:
+    if not TELEGRAM_BOT_TOKEN:
+        return "Telegram outbound is not configured. Set TELEGRAM_BOT_TOKEN."
+    response = requests.post(
+        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+        json={"chat_id": chat_id, "text": body},
+        timeout=30,
+    )
+    if response.status_code >= 400:
+        return f"Telegram send failed: {response.text}"
+    return "Telegram message sent."
+
+
 TOOL_SPECS: list[dict[str, Any]] = [
     {
         "type": "function",
@@ -740,6 +756,21 @@ TOOL_SPECS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "send_telegram",
+            "description": "Send an outbound Telegram message through the configured bot token.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chat_id": {"type": "string", "description": "Telegram chat ID or numeric user ID."},
+                    "body": {"type": "string"},
+                },
+                "required": ["chat_id", "body"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "list_databases",
             "description": "List configured read-only databases.",
             "parameters": {"type": "object", "properties": {}},
@@ -829,6 +860,7 @@ def run_tool(
         "git_diff": git_diff,
         "run_tests": run_tests,
         "send_whatsapp": send_whatsapp,
+        "send_telegram": send_telegram,
         "list_databases": list_databases,
         "test_database": test_database,
         "describe_database": describe_database,
@@ -878,6 +910,7 @@ Available local tools:
 - git_diff(path='')
 - run_tests(command='pytest') disabled unless ALLOW_SHELL=true
 - send_whatsapp(to, body) if Twilio env vars are configured
+- send_telegram(chat_id, body) if TELEGRAM_BOT_TOKEN is configured
 - list_databases()
 - test_database(name)
 - describe_database(name)
@@ -890,7 +923,7 @@ Permission profiles:
 - network-allow: readonly plus fetch_url/web_search
 - shell-ask: readonly plus shell with approval and ALLOW_SHELL=true
 - shell-allow: readonly plus shell without approval and ALLOW_SHELL=true
-- messaging-allow: readonly plus send_whatsapp
+- messaging-allow: readonly plus send_whatsapp/send_telegram
 - db-readonly: readonly plus configured read-only database tools
 
 This version supports automatic OpenAI-style function calling.

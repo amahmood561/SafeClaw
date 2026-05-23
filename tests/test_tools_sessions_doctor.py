@@ -194,6 +194,38 @@ def test_tool_depth_permissions_and_shell_guard(monkeypatch):
     )
 
 
+def test_telegram_tool_is_messaging_gated(monkeypatch):
+    from safeclaw import tools
+
+    blocked = run_tool(
+        "send_telegram",
+        {"chat_id": "123", "body": "hello"},
+        permission_profile="readonly",
+        interactive=False,
+    )
+    assert "Blocked by permission profile" in blocked
+
+    posts = []
+
+    class Response:
+        status_code = 200
+        text = "ok"
+
+    monkeypatch.setattr(tools, "TELEGRAM_BOT_TOKEN", "token")
+    monkeypatch.setattr(tools.requests, "post", lambda url, json, timeout: posts.append((url, json, timeout)) or Response())
+
+    sent = run_tool(
+        "send_telegram",
+        {"chat_id": "123", "body": "hello"},
+        permission_profile="messaging-allow",
+        approval_mode="auto",
+        interactive=False,
+    )
+
+    assert sent == "Telegram message sent."
+    assert posts == [("https://api.telegram.org/bottoken/sendMessage", {"chat_id": "123", "text": "hello"}, 30)]
+
+
 def test_memory_lifecycle():
     session = "pytest-memory"
     assert "Memory saved" in remember(session, "blue config")

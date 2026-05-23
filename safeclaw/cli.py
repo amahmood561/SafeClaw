@@ -29,6 +29,7 @@ from .tools import available_tools
 from .config import WORKSPACE
 from .llm import LLMError, provider_test as run_provider_test
 from .providers import provider_presets_text
+from .telegram import serve_telegram, telegram_setup_status
 from .whatsapp import serve_whatsapp, whatsapp_setup_status
 
 app = typer.Typer(help="SafeClaw: a self-hosted agent with explicit permissions")
@@ -245,6 +246,16 @@ def whatsapp(host: str = "0.0.0.0", port: int = 8080):
 def whatsapp_setup(public_url: str = "https://your-public-url"):
     """Show easy WhatsApp setup instructions and config status."""
     console.print(whatsapp_setup_status(public_url))
+
+@app.command("telegram")
+def telegram(once: bool = False):
+    """Run Telegram bot polling for phone access without a webhook."""
+    serve_telegram(once=once)
+
+@app.command("telegram-setup")
+def telegram_setup():
+    """Show easy Telegram setup instructions and config status."""
+    console.print(telegram_setup_status())
 
 @app.command("service-install")
 def service_install(host: str = "0.0.0.0", port: int = 8080, start: bool = True):

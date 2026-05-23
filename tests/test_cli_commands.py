@@ -40,6 +40,8 @@ def test_help_lists_all_commands():
         "db-query",
         "whatsapp",
         "whatsapp-setup",
+        "telegram",
+        "telegram-setup",
         "service-install",
         "service-start",
         "service-stop",
@@ -317,6 +319,27 @@ def test_whatsapp_setup_command(monkeypatch):
 
     assert result.exit_code == 0
     assert "setup:https://safe.example" in result.output
+
+
+def test_telegram_command_calls_server(monkeypatch):
+    calls = {}
+
+    def fake_serve(once=False):
+        calls.update(once=once)
+
+    monkeypatch.setattr(cli, "serve_telegram", fake_serve)
+    result = invoke("telegram", "--once")
+
+    assert result.exit_code == 0
+    assert calls == {"once": True}
+
+
+def test_telegram_setup_command(monkeypatch):
+    monkeypatch.setattr(cli, "telegram_setup_status", lambda: "telegram-setup")
+    result = invoke("telegram-setup")
+
+    assert result.exit_code == 0
+    assert "telegram-setup" in result.output
 
 
 def test_service_commands(monkeypatch):

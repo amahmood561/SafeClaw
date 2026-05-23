@@ -22,5 +22,11 @@ SAFECLAW_ALLOWED_SENDERS = [
     for item in os.getenv("SAFECLAW_ALLOWED_SENDERS", "").split(",")
     if item.strip()
 ]
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+SAFECLAW_ALLOWED_TELEGRAM_USERS = [
+    item.strip()
+    for item in os.getenv("SAFECLAW_ALLOWED_TELEGRAM_USERS", "").split(",")
+    if item.strip()
+]
 
 WORKSPACE.mkdir(parents=True, exist_ok=True)

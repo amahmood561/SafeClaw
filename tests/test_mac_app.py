@@ -59,7 +59,9 @@ def test_electron_app_ui_has_expected_sections():
         "Command Center",
         "Task Queue",
         "Approval Inbox",
-        "WhatsApp",
+        "Phone",
+        "Telegram quick setup",
+        "Save Telegram Config",
         "Save WhatsApp Config",
         "toolActivityDrawer",
         "Databases",
@@ -75,7 +77,7 @@ def test_electron_app_uses_existing_safeclaw_commands():
 
     assert "install.sh" in main
     assert "safeclaw.cli" in main
-    for command in ["doctor", "run", "status", "memory", "reset", "whatsapp", "service-install", "db-query"]:
+    for command in ["doctor", "run", "status", "memory", "reset", "whatsapp", "telegram", "telegram-setup", "service-install", "db-query"]:
         assert command in main + renderer
 
 
@@ -163,6 +165,7 @@ def test_electron_chat_fluidity_features_are_wired():
         "renderMarkdownLite",
         "setResponseText",
         "appendResponseText",
+        "event.content",
         "rendered-response",
         "markdown-code",
         "markdown-table",
@@ -195,6 +198,10 @@ def test_electron_setup_preserves_and_auto_saves_secrets():
     assert "settings.twilioToken || existing.TWILIO_AUTH_TOKEN" in main
     assert "existing.TWILIO_ACCOUNT_SID" in main
     assert "existing.SAFECLAW_ALLOWED_SENDERS" in main
+    assert "settings.telegramToken || existing.TELEGRAM_BOT_TOKEN" in main
+    assert "existing.SAFECLAW_ALLOWED_TELEGRAM_USERS" in main
+    assert "telegramToken" in html
+    assert "allowedTelegramUsers" in html
     assert "providerPresets" in renderer
     assert "applyProviderPreset" in renderer
     assert "provider-test" in renderer

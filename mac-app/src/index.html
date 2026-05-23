@@ -20,7 +20,7 @@
         <button class="nav-item" data-view="run">Run</button>
         <button class="nav-item" data-view="chat">Chat</button>
         <button class="nav-item" data-view="jarvis">Jarvis</button>
-        <button class="nav-item" data-view="whatsapp">WhatsApp</button>
+        <button class="nav-item" data-view="whatsapp">Phone</button>
         <button class="nav-item" data-view="database">Databases</button>
         <button class="nav-item" data-view="logs">Output</button>
       </nav>
@@ -286,8 +286,31 @@
       <section id="whatsapp" class="view">
         <div class="panel intro">
           <div>
-            <h2>Talk to SafeClaw over WhatsApp.</h2>
-            <p>Configure Twilio in <code>.env</code>, expose <code>/whatsapp</code> with a public HTTPS URL, then run the webhook or persistent service.</p>
+            <h2>Talk to SafeClaw from your phone.</h2>
+            <p>Choose Telegram for the fastest setup, or WhatsApp when you need Twilio and a production WhatsApp workflow.</p>
+          </div>
+        </div>
+        <div class="grid two">
+          <div class="panel">
+            <h3>Telegram quick setup</h3>
+            <p class="muted">Best for low-friction testing. Create a bot with BotFather, paste the token, and SafeClaw polls from this Mac.</p>
+            <label>Bot token<input id="telegramToken" type="password" autocomplete="off" placeholder="123456:ABC..."></label>
+            <label>Allowed Telegram users<input id="allowedTelegramUsers" autocomplete="off" placeholder="123456789,987654321"></label>
+            <div class="button-row wrap">
+              <button id="saveTelegramConfigBtn" class="primary">Save Telegram Config</button>
+              <button id="startTelegramBtn">Start Telegram</button>
+              <button id="telegramSetupBtn">Show Setup</button>
+              <button id="botFatherBtn">Open BotFather</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Connection choice</h3>
+            <div class="permission-list">
+              <div class="permission-row"><span>Telegram</span><strong>fastest</strong></div>
+              <div class="permission-row"><span>No public webhook</span><strong>polling</strong></div>
+              <div class="permission-row"><span>WhatsApp</span><strong>Twilio</strong></div>
+              <div class="permission-row"><span>Persistent access</span><strong>Mac service</strong></div>
+            </div>
           </div>
         </div>
         <div class="grid two">
@@ -324,9 +347,10 @@
           <div class="panel">
             <h3>Setup checklist</h3>
             <ol class="setup-checklist">
-              <li>Save Twilio config.</li>
-              <li>Expose this Mac with ngrok or Cloudflare Tunnel.</li>
-              <li>Set Twilio incoming webhook to <code>https://your-public-url/whatsapp</code>.</li>
+              <li>Telegram: create a bot with <code>@BotFather</code>, save the token, then start Telegram polling.</li>
+              <li>Telegram: add your numeric user ID to <code>SAFECLAW_ALLOWED_TELEGRAM_USERS</code> before sharing the bot.</li>
+              <li>WhatsApp: save Twilio config and expose this Mac with ngrok or Cloudflare Tunnel.</li>
+              <li>WhatsApp: set Twilio incoming webhook to <code>https://your-public-url/whatsapp</code>.</li>
               <li>Install/start the persistent service if you want SafeClaw reachable while you are away.</li>
             </ol>
           </div>

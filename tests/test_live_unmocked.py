@@ -27,3 +27,10 @@ def test_live_whatsapp_setup_unmocked():
     result = runner.invoke(app, ["whatsapp-setup"])
     assert result.exit_code == 0
     assert "WhatsApp setup" in result.output
+
+
+@pytest.mark.live
+def test_live_telegram_setup_unmocked():
+    result = runner.invoke(app, ["telegram-setup"])
+    assert result.exit_code == 0
+    assert "Telegram setup" in result.output

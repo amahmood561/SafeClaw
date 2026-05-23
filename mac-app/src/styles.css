@@ -115,6 +115,34 @@ label.check input {
   margin: 0;
 }
 
+.permission-list {
+  display: grid;
+  gap: 10px;
+}
+
+.permission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.permission-row span {
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.permission-row strong {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 code {
   padding: 1px 5px;
   border-radius: 5px;

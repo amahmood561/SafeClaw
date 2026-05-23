@@ -198,6 +198,8 @@ ipcMain.handle('save-env', (_event, settings) => {
   const twilioToken = settings.twilioToken || existing.TWILIO_AUTH_TOKEN || '';
   const twilioFrom = settings.twilioFrom || existing.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
   const allowedSenders = settings.allowedSenders || existing.SAFECLAW_ALLOWED_SENDERS || '';
+  const telegramToken = settings.telegramToken || existing.TELEGRAM_BOT_TOKEN || '';
+  const allowedTelegramUsers = settings.allowedTelegramUsers || existing.SAFECLAW_ALLOWED_TELEGRAM_USERS || '';
   const content = [
     '# Use OpenAI-compatible API endpoint',
     `SAFECLAW_PROVIDER_PRESET=${settings.providerPreset || 'custom'}`,
@@ -220,6 +222,10 @@ ipcMain.handle('save-env', (_event, settings) => {
     `TWILIO_AUTH_TOKEN=${twilioToken}`,
     `TWILIO_WHATSAPP_FROM=${twilioFrom}`,
     `SAFECLAW_ALLOWED_SENDERS=${allowedSenders}`,
+    '',
+    '# Optional Telegram phone access.',
+    `TELEGRAM_BOT_TOKEN=${telegramToken}`,
+    `SAFECLAW_ALLOWED_TELEGRAM_USERS=${allowedTelegramUsers}`,
     '',
   ].join('\n');
   fs.writeFileSync(envPath, content, { mode: 0o600 });

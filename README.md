@@ -10,9 +10,9 @@ Website: https://safestclaw.com
 
 GitHub: https://github.com/amahmood561/SafeClaw
 
-Latest macOS DMG: https://github.com/amahmood561/SafeClaw/releases/latest
-
 Get SafeClaw on Gumroad: https://mahmoodify3.gumroad.com/l/safeclaw
+
+Latest GitHub macOS DMG release: https://github.com/amahmood561/SafeClaw/releases/latest
 
 Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
@@ -30,16 +30,17 @@ https://github.com/amahmood561/SafeClaw
 SafeClaw is early, independent, and built around a simple goal: local
 automation that is useful without being mysterious.
 
-If you want to support the work, you can buy the team a coffee:
-
-[Buy the team a coffee ☕](https://buymeacoffee.com/alifla)
-
-You can also get the SafeClaw Mac app release on Gumroad:
+The simplest way to get the packaged Mac app is through Gumroad:
 
 [Get SafeClaw on Gumroad](https://mahmoodify3.gumroad.com/l/safeclaw)
 
+If you already have the app or just want to back the work, you can buy the team
+a coffee:
+
+[Buy the team a coffee ☕](https://buymeacoffee.com/alifla)
+
 Support goes toward hosting, domain costs, testing, and continued work on the
-installer, WhatsApp setup, local model support, and permission system.
+installer, phone setup, local model support, and permission system.
 
 ## Landing page and docs site
 
@@ -314,25 +315,25 @@ mac-app/
 
 ## Setup
 
-### Latest macOS DMG release
+### Get the Mac app
 
-The easiest way to try the desktop app on macOS is to download the latest DMG:
-
-```text
-https://github.com/amahmood561/SafeClaw/releases/latest
-```
-
-You can also get the packaged SafeClaw release from Gumroad:
+The easiest way to try the desktop app on macOS is to get the packaged release
+from Gumroad:
 
 ```text
 https://mahmoodify3.gumroad.com/l/safeclaw
 ```
 
-1. Open the latest release.
-2. Download the `SafeClaw-*.dmg` asset.
-3. Open the DMG.
-4. Drag SafeClaw into Applications, or run it from the mounted DMG for testing.
-5. If macOS blocks it, right-click SafeClaw and choose **Open**.
+The GitHub release is also available for people who prefer the repo-native path:
+
+```text
+https://github.com/amahmood561/SafeClaw/releases/latest
+```
+
+1. Download the SafeClaw Mac app DMG from Gumroad or GitHub Releases.
+2. Open the `SafeClaw-*.dmg` file.
+3. Drag SafeClaw into Applications, or run it from the mounted DMG for testing.
+4. If macOS blocks it, right-click SafeClaw and choose **Open**.
 
 Note: early DMG builds may be unsigned or not notarized yet, so macOS can show a
 warning. That does not mean the app is broken. The source install path below is

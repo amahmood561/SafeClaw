@@ -10,6 +10,8 @@ Website: https://safestclaw.com
 
 GitHub: https://github.com/amahmood561/SafeClaw
 
+Latest macOS DMG: https://github.com/amahmood561/SafeClaw/releases/latest
+
 Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
 explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
 SQLite database tools.
@@ -303,6 +305,24 @@ mac-app/
 ```
 
 ## Setup
+
+### Latest macOS DMG release
+
+The easiest way to try the desktop app on macOS is to download the latest DMG:
+
+```text
+https://github.com/amahmood561/SafeClaw/releases/latest
+```
+
+1. Open the latest release.
+2. Download the `SafeClaw-*.dmg` asset.
+3. Open the DMG.
+4. Drag SafeClaw into Applications, or run it from the mounted DMG for testing.
+5. If macOS blocks it, right-click SafeClaw and choose **Open**.
+
+Note: early DMG builds may be unsigned or not notarized yet, so macOS can show a
+warning. That does not mean the app is broken. The source install path below is
+still available if you prefer to run directly from the repository.
 
 ### Database setup
 

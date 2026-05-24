@@ -51,8 +51,17 @@
         <p>SafeClaw can be installed as a quick terminal command, a guided terminal flow, or a double-click Mac setup wizard. The global <code>safeclaw</code> command is opt-in so the installer does not silently modify a user’s shell environment.</p>
 
         <h2 id="mac-app">Mac app after purchase</h2>
-        <p>The easiest path for most Mac users is the packaged SafeClaw app from Gumroad. Download the DMG, open it, and drag SafeClaw into Applications.</p>
+        <p>The easiest path for most Mac users is the packaged SafeClaw app from Gumroad.</p>
         <p><a class="button primary" href="https://mahmoodify3.gumroad.com/l/safeclaw">Get SafeClaw on Gumroad</a></p>
+        <div class="steps">
+          <div class="step"><span class="step-number">1</span><div><h3>Install the app</h3><p>Download <code>SafeClaw.dmg</code>, open the DMG, drag <code>SafeClaw</code> into Applications, then open SafeClaw.</p></div></div>
+          <div class="step"><span class="step-number">2</span><div><h3>Choose a provider</h3><p>Go to Setup and choose OpenAI, Ollama, Groq, OpenRouter / Claude, LiteLLM, or a custom OpenAI-compatible endpoint.</p></div></div>
+          <div class="step"><span class="step-number">3</span><div><h3>Add API settings</h3><p>Enter the API key, base URL, and model name, then save config and run Doctor.</p></div></div>
+        </div>
+        <pre class="code-block" id="install-openai-example"><code>OPENAI_API_KEY=sk-your-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini</code></pre>
+        <p><button class="button secondary" data-copy="#install-openai-example">Copy OpenAI example</button></p>
         <p>If macOS keeps blocking the app after you move it into Applications, clear the download quarantine flag:</p>
         <pre class="code-block" id="install-xattr"><code>xattr -cr /Applications/SafeClaw.app</code></pre>
         <p><button class="button secondary" data-copy="#install-xattr">Copy Mac unblock command</button></p>

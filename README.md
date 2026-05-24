@@ -356,10 +356,42 @@ The GitHub release is also available for people who prefer the repo-native path:
 https://github.com/amahmood561/SafeClaw/releases/latest
 ```
 
-1. Download the SafeClaw Mac app DMG from Gumroad or GitHub Releases.
-2. Open the `SafeClaw-*.dmg` file.
-3. Drag SafeClaw into Applications, or run it from the mounted DMG for testing.
-4. If macOS blocks it, right-click SafeClaw and choose **Open**.
+**SafeClaw DMG install steps**
+
+1. Download `SafeClaw.dmg` from Gumroad or GitHub Releases.
+2. Open the DMG.
+3. Drag `SafeClaw` into `Applications`.
+4. Open `SafeClaw`.
+5. If macOS blocks it, right-click `SafeClaw` and choose **Open**.
+6. Go to **Setup**.
+7. Choose a provider preset:
+   - OpenAI
+   - Ollama
+   - Groq
+   - OpenRouter / Claude
+   - LiteLLM
+   - Custom OpenAI-compatible
+8. Add your API info:
+   - API key
+   - Base URL
+   - Model name
+9. Save config, then run **Doctor** inside the app.
+
+Example OpenAI settings:
+
+```text
+OPENAI_API_KEY=sk-your-key
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
+```
+
+Example Ollama settings:
+
+```text
+OPENAI_API_KEY=ollama
+OPENAI_BASE_URL=http://localhost:11434/v1
+OPENAI_MODEL=llama3.2:3b
+```
 
 Note: early DMG builds may be unsigned or not notarized yet, so macOS can show a
 warning. That does not mean the app is broken. The source install path below is

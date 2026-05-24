@@ -68,6 +68,9 @@ python3 -m pytest -q
 info "Checking Electron app"
 npm --prefix mac-app run check
 
+info "Building bundled SafeClaw runtime"
+bash scripts/build-mac-runtime.sh
+
 info "Installing Electron dependencies"
 npm --prefix mac-app install
 

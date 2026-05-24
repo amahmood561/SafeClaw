@@ -267,9 +267,29 @@ async function loadEnv() {
   appendOutput(`Loaded config from ${$('installDir').value}/.env\n`);
 }
 
+async function refreshRuntimeInfo() {
+  const target = $('runtimeHint');
+  if (!target || !window.safeclaw.runtimeInfo) return;
+  const info = await window.safeclaw.runtimeInfo(settings()).catch(() => null);
+  if (!info) {
+    target.textContent = 'Runtime status unavailable.';
+    return;
+  }
+  if (info.bundled) {
+    target.textContent = 'Packaged runtime is included. Gumroad users can save setup and run SafeClaw without Xcode developer tools.';
+    return;
+  }
+  if (info.venv) {
+    target.textContent = `Using existing source install at ${info.venvPath}.`;
+    return;
+  }
+  target.textContent = 'No packaged runtime found. Developer Install / Update uses Git, Python, and may require Apple Command Line Tools.';
+}
+
 async function saveEnv() {
   const result = await window.safeclaw.saveEnv(settings());
   appendOutput(`Saved config: ${result.path}\n`);
+  await refreshRuntimeInfo();
 }
 
 async function runSafeClaw(args, title) {
@@ -1357,6 +1377,13 @@ function bindEvents() {
 
   $('installBtn').addEventListener('click', async () => {
     showView('logs');
+    setStatus('Saving', 'running');
+    await saveEnv().catch((error) => appendOutput(`Config save failed: ${error.message}\n`));
+    setStatus('Saved', 'ok');
+  });
+
+  $('developerInstallBtn').addEventListener('click', async () => {
+    showView('logs');
     setStatus('Installing', 'running');
     saveConfigAfterInstall = true;
     const result = await window.safeclaw.install(settings());
@@ -1368,6 +1395,7 @@ function bindEvents() {
 
   $('saveConfigBtn').addEventListener('click', saveEnv);
   $('loadConfigBtn').addEventListener('click', loadEnv);
+  $('installDir').addEventListener('change', refreshRuntimeInfo);
   $('doctorBtn').addEventListener('click', () => runSafeClaw(['doctor'], 'Run Doctor'));
   $('providerPreset').addEventListener('change', applyProviderPreset);
   $('providerTestBtn').addEventListener('click', () => runSafeClaw(['provider-test'], 'Provider Test'));
@@ -1639,6 +1667,7 @@ async function init() {
     .join('');
   await loadDefaults();
   await loadEnv().catch(() => {});
+  await refreshRuntimeInfo();
   bindEvents();
   setJarvisEnabled(isJarvisEnabled());
   loadTaskHistory();

@@ -3,11 +3,16 @@
 This folder contains a separate Electron desktop app for SafeClaw.
 
 The app gives non-terminal users a clearer setup and control surface while
-still calling the existing SafeClaw installer and CLI commands underneath.
+using a bundled SafeClaw runtime in packaged DMG builds. Developer source
+installs can still call the existing SafeClaw installer when needed.
 
 ## What the app does
 
-- Install or update SafeClaw into `~/safeclaw` by default.
+- Use the bundled SafeClaw runtime from the DMG when available.
+- Save setup without requiring Git, pip, or Xcode developer tools for normal
+  Gumroad users.
+- Install or update SafeClaw into `~/safeclaw` only from the advanced developer
+  install path.
 - Save a local `.env` file.
 - Pick provider presets for OpenAI, Ollama, Groq, OpenRouter/Claude, LiteLLM, or a custom OpenAI-compatible endpoint.
 - Test the configured provider from the app before running tasks.
@@ -32,7 +37,7 @@ still calling the existing SafeClaw installer and CLI commands underneath.
 2. Open Terminal in `mac-app/`.
 3. Run `npm install`.
 4. Run `npm start`.
-5. Click **Install / Update**.
+5. Click **Save Setup**.
 6. Choose a provider preset and add API/model/workspace settings.
 7. Click **Save Config**.
 8. Click **Test Provider**.
@@ -53,8 +58,14 @@ OPENAI_MODEL=anthropic/claude-3.5-sonnet
 ## Build a macOS app bundle
 
 ```bash
-cd mac-app
-npm install
+bash scripts/build-mac-runtime.sh
+npm --prefix mac-app install
+npm --prefix mac-app run build:mac
+```
+
+From inside `mac-app/`, the final build command is:
+
+```bash
 npm run build:mac
 ```
 
@@ -67,8 +78,11 @@ mac-app/dist/
 ## Notes
 
 - This app does not replace the CLI.
-- It does not bundle Python or SafeClaw dependencies yet.
-- It expects `python3` and `git` to be available on the Mac.
+- Packaged DMG builds include a `runtime/safeclaw-bin` backend built with
+  PyInstaller.
+- Gumroad users should not need `python3`, `git`, `pip`, or Xcode developer
+  tools for the normal app flow.
+- `python3` and `git` are only expected for developer/source installs.
 - It keeps the actual SafeClaw install separate, usually at `~/safeclaw`.
 - The existing `mac-setup/` wizard is unchanged.
 - Dropped text files are sent with a capped preview. Larger or binary files are sent as local file references so users do not accidentally dump huge content into a chat request.

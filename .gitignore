@@ -5,11 +5,13 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
+.build/
 htmlcov/
 dist/
 build/
 site-dist/
 *.egg-info/
+mac-app/runtime/safeclaw-bin
 
 # wrangler files
 .wrangler

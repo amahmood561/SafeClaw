@@ -62,11 +62,27 @@ function safeclawBin(installDir) {
   return path.join(installDir, '.venv', 'bin', 'safeclaw');
 }
 
+function bundledSafeclawBin() {
+  const candidates = [
+    path.join(process.resourcesPath || '', 'runtime', 'safeclaw-bin'),
+    path.join(__dirname, '..', 'runtime', 'safeclaw-bin'),
+  ];
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || '';
+}
+
 function commandEnv(installDir) {
+  const bundled = bundledSafeclawBin();
+  const runtimeDir = bundled ? path.dirname(bundled) : '';
   return {
     ...process.env,
     SAFECLAW_EVENT_STREAM: 'true',
-    PATH: `${path.join(installDir, '.venv', 'bin')}:/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || ''}`,
+    PATH: [
+      runtimeDir,
+      path.join(installDir, '.venv', 'bin'),
+      '/opt/homebrew/bin',
+      '/usr/local/bin',
+      process.env.PATH || '',
+    ].filter(Boolean).join(':'),
   };
 }
 
@@ -179,14 +195,29 @@ function runCommand({ id, title, command, args = [], cwd }) {
 }
 
 function safeclawCommand(settings, args) {
+  const bundled = bundledSafeclawBin();
+  if (bundled) {
+    return { command: bundled, args, source: 'bundled' };
+  }
   const bin = safeclawBin(settings.installDir);
   if (fs.existsSync(bin)) {
-    return { command: bin, args };
+    return { command: bin, args, source: 'venv' };
   }
-  return { command: 'python3', args: ['-m', 'safeclaw.cli', ...args] };
+  return { command: 'python3', args: ['-m', 'safeclaw.cli', ...args], source: 'python' };
 }
 
 ipcMain.handle('defaults', () => DEFAULTS);
+
+ipcMain.handle('runtime-info', (_event, settings = {}) => {
+  const bundled = bundledSafeclawBin();
+  const venv = safeclawBin(settings.installDir || DEFAULTS.installDir);
+  return {
+    bundled: Boolean(bundled),
+    bundledPath: bundled,
+    venv: fs.existsSync(venv),
+    venvPath: venv,
+  };
+});
 
 ipcMain.handle('load-env', (_event, installDir) => {
   const envPath = path.join(installDir, '.env');
@@ -284,8 +315,8 @@ ipcMain.handle('open-url', (_event, url) => {
 });
 
 ipcMain.handle('open-chat', (_event, settings) => {
-  const bin = safeclawBin(settings.installDir);
-  const command = `cd ${JSON.stringify(settings.installDir)} && ${JSON.stringify(bin)} chat`;
+  const resolved = safeclawCommand(settings, ['chat']);
+  const command = `cd ${JSON.stringify(settings.installDir)} && ${[resolved.command, ...resolved.args].map((part) => JSON.stringify(part)).join(' ')}`;
   spawn('osascript', ['-e', `tell application "Terminal" to do script ${JSON.stringify(command)}`], {
     detached: true,
     stdio: 'ignore',

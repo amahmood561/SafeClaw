@@ -377,6 +377,10 @@ https://github.com/amahmood561/SafeClaw/releases/latest
    - Model name
 9. Save config, then run **Doctor** inside the app.
 
+The packaged DMG includes the SafeClaw runtime, so Gumroad users should not need
+`git`, `pip`, Python setup, or Xcode Command Line Tools for the normal app flow.
+Those tools are only needed for source installs and development builds.
+
 Example OpenAI settings:
 
 ```text

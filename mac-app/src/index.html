@@ -43,21 +43,23 @@
         <div class="panel intro">
           <div>
             <h2>Get SafeClaw ready without living in Terminal.</h2>
-            <p>Install the CLI, save local config, and run diagnostics from one place. Nothing here gives SafeClaw extra permissions by itself.</p>
+            <p>Save local config and run diagnostics from one place. Packaged Mac builds include the SafeClaw runtime, so normal users do not need Git, pip, or Xcode developer tools.</p>
           </div>
-          <button id="installBtn" class="primary">Install / Update</button>
+          <button id="installBtn" class="primary">Save Setup</button>
         </div>
 
         <div class="grid two">
           <div class="panel">
-            <h3>Install</h3>
+            <h3>Runtime</h3>
             <label>Install folder<input id="installDir" autocomplete="off"></label>
             <label>Git repo<input id="repoUrl" autocomplete="off"></label>
             <label>Branch or tag<input id="ref" autocomplete="off"></label>
             <div class="button-row">
               <button id="openFolderBtn">Open Folder</button>
               <button id="doctorBtn">Run Doctor</button>
+              <button id="developerInstallBtn">Developer Install / Update</button>
             </div>
+            <div id="runtimeHint" class="hint">Packaged runtime status will appear after setup loads.</div>
           </div>
 
           <div class="panel">
@@ -69,7 +71,7 @@
             <div class="button-row">
               <button id="providerTestBtn">Test Provider</button>
             </div>
-            <div id="providerHint" class="hint">Click <strong>Save Config</strong> after changing credentials. Install / Update also saves this setup after a successful install.</div>
+            <div id="providerHint" class="hint">Click <strong>Save Config</strong> or <strong>Save Setup</strong> after changing credentials. Developer Install / Update is only for source installs.</div>
           </div>
         </div>
 

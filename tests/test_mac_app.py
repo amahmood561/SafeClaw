@@ -13,10 +13,11 @@ INDEX_HTML = MAC_APP / "src" / "index.html"
 STYLES = MAC_APP / "src" / "styles.css"
 APP_README = MAC_APP / "README.md"
 CAPTURE_SCRIPT = MAC_APP / "scripts" / "capture-screenshots.js"
+BUILD_RUNTIME_SCRIPT = ROOT / "scripts" / "build-mac-runtime.sh"
 
 
 def test_electron_mac_app_files_exist():
-    for path in [PACKAGE_JSON, MAIN_JS, PRELOAD_JS, RENDERER_JS, INDEX_HTML, STYLES, APP_README, CAPTURE_SCRIPT]:
+    for path in [PACKAGE_JSON, MAIN_JS, PRELOAD_JS, RENDERER_JS, INDEX_HTML, STYLES, APP_README, CAPTURE_SCRIPT, BUILD_RUNTIME_SCRIPT]:
         assert path.exists(), path
 
 
@@ -29,6 +30,8 @@ def test_electron_package_has_expected_scripts_and_metadata():
     assert "electron" in package["devDependencies"]
     assert package["build"]["appId"] == "com.safeclaw.app"
     assert package["build"]["productName"] == "SafeClaw"
+    assert "runtime/**/*" in package["build"]["files"]
+    assert package["build"]["extraResources"][0]["from"] == "runtime/safeclaw-bin"
 
 
 def test_electron_javascript_syntax_is_valid():
@@ -47,7 +50,9 @@ def test_electron_app_ui_has_expected_sections():
     html = INDEX_HTML.read_text()
 
     for text in [
-        "Install / Update",
+        "Save Setup",
+        "Developer Install / Update",
+        "runtimeHint",
         "Provider preset",
         "Test Provider",
         "Run Task",
@@ -82,6 +87,12 @@ def test_electron_app_uses_existing_safeclaw_commands():
     renderer = RENDERER_JS.read_text()
 
     assert "install.sh" in main
+    assert "bundledSafeclawBin" in main
+    assert "process.resourcesPath" in main
+    runtime_script = BUILD_RUNTIME_SCRIPT.read_text()
+    assert "pyinstaller" in runtime_script
+    assert "runtime/safeclaw-bin" in runtime_script
+    assert "Developer Install / Update" in renderer + INDEX_HTML.read_text()
     assert "safeclaw.cli" in main
     for command in ["doctor", "run", "status", "memory", "reset", "whatsapp", "telegram", "telegram-setup", "service-install", "db-query"]:
         assert command in main + renderer
@@ -237,7 +248,10 @@ def test_electron_setup_preserves_and_auto_saves_secrets():
     assert "saveConfigAfterInstall" in renderer
     assert "payload.id === 'install'" in renderer
     assert "saveEnv().then(loadEnv)" in renderer
-    assert "Install / Update also saves this setup" in html
+    assert "Developer Install / Update is only for source installs" in html
+    assert "runtimeInfo" in PRELOAD_JS.read_text()
+    assert "refreshRuntimeInfo" in renderer
+    assert "Gumroad users can save setup" in renderer
 
 
 def test_readme_references_mac_app_screenshots():

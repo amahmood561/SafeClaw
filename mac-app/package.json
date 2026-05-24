@@ -22,7 +22,14 @@
     },
     "files": [
       "src/**/*",
+      "runtime/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime/safeclaw-bin",
+        "to": "runtime/safeclaw-bin"
+      }
     ],
     "mac": {
       "category": "public.app-category.developer-tools",

@@ -349,6 +349,94 @@ p {
   gap: 24px;
 }
 
+.panel.first-run {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  gap: 22px;
+  align-items: center;
+  border-color: rgba(36, 113, 79, 0.28);
+  background: linear-gradient(135deg, #ffffff 0%, #f4faf6 100%);
+}
+
+.first-run-copy p:last-child {
+  margin-bottom: 0;
+}
+
+.first-run-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 15px;
+}
+
+.panel-heading p {
+  margin-bottom: 0;
+}
+
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.health-card {
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-soft);
+}
+
+.health-card strong,
+.health-card span {
+  display: block;
+}
+
+.health-card strong {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.health-card span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.health-card::before {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 860;
+  text-transform: uppercase;
+  content: attr(data-status);
+}
+
+.health-card[data-mode="ok"]::before {
+  color: #284232;
+  background: #dceee2;
+}
+
+.health-card[data-mode="warn"]::before {
+  color: #66420e;
+  background: #f2dfbd;
+}
+
+.health-card[data-mode="fail"]::before {
+  color: #782c2c;
+  background: #f0d4d4;
+}
+
 .grid {
   display: grid;
   gap: 18px;
@@ -1241,15 +1329,22 @@ pre#output {
 
   .grid.two,
   .grid.three,
+  .panel.first-run,
+  .health-grid,
   .chat-shell,
   .jarvis-grid,
   .jarvis-rules {
     grid-template-columns: 1fr;
   }
 
-  .panel.intro {
+  .panel.intro,
+  .panel-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .first-run-actions {
+    grid-template-columns: 1fr;
   }
 
   .jarvis-hero,

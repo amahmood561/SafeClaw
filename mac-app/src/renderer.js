@@ -87,6 +87,7 @@ let taskHistory = [];
 let taskQueue = [];
 const responseText = new WeakMap();
 let toolActivityCount = 0;
+let latestRuntimeInfo = null;
 
 function setOptions(select, values) {
   select.innerHTML = values.map((value) => `<option value="${value}">${value}</option>`).join('');
@@ -136,6 +137,7 @@ function applyProviderPreset() {
   if (preset.model) $('model').value = preset.model;
   if ($('providerPreset').value === 'ollama' && !$('apiKey').value) $('apiKey').value = 'ollama';
   updateProviderHint();
+  refreshRuntimeInfo();
   updateChatContext();
   updateJarvisContext();
 }
@@ -271,19 +273,95 @@ async function refreshRuntimeInfo() {
   const target = $('runtimeHint');
   if (!target || !window.safeclaw.runtimeInfo) return;
   const info = await window.safeclaw.runtimeInfo(settings()).catch(() => null);
+  latestRuntimeInfo = info;
   if (!info) {
     target.textContent = 'Runtime status unavailable.';
+    renderRuntimeHealth(null);
     return;
   }
   if (info.bundled) {
     target.textContent = 'Packaged runtime is included. Gumroad users can save setup and run SafeClaw without Xcode developer tools.';
-    return;
-  }
-  if (info.venv) {
+  } else if (info.venv) {
     target.textContent = `Using existing source install at ${info.venvPath}.`;
+  } else {
+    target.textContent = 'No packaged runtime found. Developer Install / Update uses Git, Python, and may require Apple Command Line Tools.';
+  }
+  renderRuntimeHealth(info);
+}
+
+function healthCard(label, ok, detail, warn = false) {
+  const mode = ok ? 'ok' : (warn ? 'warn' : 'fail');
+  const status = ok ? 'OK' : (warn ? 'WARN' : 'FIX');
+  return `<div class="health-card" data-mode="${mode}" data-status="${status}"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(detail)}</span></div>`;
+}
+
+function renderRuntimeHealth(info) {
+  const target = $('runtimeHealthGrid');
+  if (!target) return;
+  if (!info) {
+    target.innerHTML = healthCard('Runtime', false, 'Runtime status unavailable.');
     return;
   }
-  target.textContent = 'No packaged runtime found. Developer Install / Update uses Git, Python, and may require Apple Command Line Tools.';
+  target.innerHTML = [
+    healthCard(
+      'Bundled runtime',
+      info.bundled,
+      info.bundled ? `Ready: ${info.bundledPath}` : 'Missing. Use Developer Install / Update or rebuild the DMG runtime.',
+      info.venv,
+    ),
+    healthCard(
+      'Provider config',
+      info.providerConfigured,
+      info.providerConfigured ? `${info.model} via ${info.baseUrl}` : 'Add an API key or use Ollama, then save setup.',
+    ),
+    healthCard(
+      'Workspace',
+      info.workspaceWritable,
+      info.workspaceWritable ? `Writable: ${info.workspace}` : `Not writable: ${info.workspace}`,
+    ),
+    healthCard(
+      'Telegram',
+      info.telegramConfigured && info.allowedTelegramUsersConfigured,
+      info.telegramConfigured
+        ? (info.allowedTelegramUsersConfigured ? 'Configured with allowed users.' : 'Bot token saved. Add allowed Telegram user IDs.')
+        : 'Optional. Configure in Phone when ready.',
+      !info.telegramConfigured,
+    ),
+  ].join('');
+}
+
+function diagnosticReport() {
+  const info = latestRuntimeInfo || {};
+  return [
+    'SafeClaw Diagnostic Report',
+    `Generated: ${new Date().toISOString()}`,
+    `App version: ${info.appVersion || 'unknown'}`,
+    `Bundled runtime: ${info.bundled ? 'yes' : 'no'}`,
+    `Bundled runtime path: ${info.bundledPath || '(missing)'}`,
+    `Source venv runtime: ${info.venv ? 'yes' : 'no'}`,
+    `Config exists: ${info.configExists ? 'yes' : 'no'}`,
+    `Config path: ${info.envPath || '(unknown)'}`,
+    `Provider configured: ${info.providerConfigured ? 'yes' : 'no'}`,
+    `Base URL: ${info.baseUrl || '(unknown)'}`,
+    `Model: ${info.model || '(unknown)'}`,
+    `Workspace: ${info.workspace || workspaceDisplay()}`,
+    `Workspace writable: ${info.workspaceWritable ? 'yes' : 'no'}`,
+    `Permission profile: ${info.permissionProfile || $('permissionProfile').value}`,
+    `Telegram configured: ${info.telegramConfigured ? 'yes' : 'no'}`,
+    `Allowed Telegram users configured: ${info.allowedTelegramUsersConfigured ? 'yes' : 'no'}`,
+  ].join('\n');
+}
+
+async function copyDiagnostics() {
+  await refreshRuntimeInfo();
+  const report = diagnosticReport();
+  if (window.safeclaw.copyText) {
+    await window.safeclaw.copyText(report);
+  } else if (navigator.clipboard) {
+    await navigator.clipboard.writeText(report);
+  }
+  appendOutput('Copied diagnostic report without secrets.\n');
+  setStatus('Copied', 'ok');
 }
 
 async function saveEnv() {
@@ -300,6 +378,14 @@ async function runSafeClaw(args, title) {
     appendOutput(`Error: ${result.error}\n`);
     setStatus('Idle');
   }
+}
+
+async function sendFirstRunPrompt() {
+  await saveEnv();
+  await runSafeClaw(
+    ['run', 'Reply with one short sentence confirming SafeClaw is ready on this Mac.', '--permission-profile', 'readonly'],
+    'First Run Test Prompt',
+  );
 }
 
 function setTaskResultState(text, mode = 'idle') {
@@ -1382,6 +1468,17 @@ function bindEvents() {
     setStatus('Saved', 'ok');
   });
 
+  $('firstRunSaveBtn').addEventListener('click', async () => {
+    showView('logs');
+    setStatus('Saving', 'running');
+    await saveEnv().catch((error) => appendOutput(`Config save failed: ${error.message}\n`));
+    setStatus('Saved', 'ok');
+  });
+  $('firstRunProviderBtn').addEventListener('click', () => runSafeClaw(['provider-test'], 'Provider Test'));
+  $('firstRunDoctorBtn').addEventListener('click', () => runSafeClaw(['doctor'], 'Run Doctor'));
+  $('firstRunPromptBtn').addEventListener('click', sendFirstRunPrompt);
+  $('copyDiagnosticsBtn').addEventListener('click', copyDiagnostics);
+
   $('developerInstallBtn').addEventListener('click', async () => {
     showView('logs');
     setStatus('Installing', 'running');
@@ -1398,6 +1495,12 @@ function bindEvents() {
   $('installDir').addEventListener('change', refreshRuntimeInfo);
   $('doctorBtn').addEventListener('click', () => runSafeClaw(['doctor'], 'Run Doctor'));
   $('providerPreset').addEventListener('change', applyProviderPreset);
+  $('baseUrl').addEventListener('change', refreshRuntimeInfo);
+  $('model').addEventListener('change', refreshRuntimeInfo);
+  $('apiKey').addEventListener('change', refreshRuntimeInfo);
+  $('workspace').addEventListener('change', refreshRuntimeInfo);
+  $('telegramToken').addEventListener('change', refreshRuntimeInfo);
+  $('allowedTelegramUsers').addEventListener('change', refreshRuntimeInfo);
   $('providerTestBtn').addEventListener('click', () => runSafeClaw(['provider-test'], 'Provider Test'));
   $('openFolderBtn').addEventListener('click', () => window.safeclaw.openPath(settings().installDir));
   $('runTaskBtn').addEventListener('click', runTaskInPanel);

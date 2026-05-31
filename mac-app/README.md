@@ -37,12 +37,14 @@ installs can still call the existing SafeClaw installer when needed.
 2. Open Terminal in `mac-app/`.
 3. Run `npm install`.
 4. Run `npm start`.
-5. Click **Save Setup**.
-6. Choose a provider preset and add API/model/workspace settings.
-7. Click **Save Config**.
-8. Click **Test Provider**.
-9. Click **Run Doctor**.
-10. Turn on **Jarvis mode** when you want the higher-level command center instead of the standard Chat view.
+5. Use the **First run** panel:
+   - **Save Setup**
+   - **Test Provider**
+   - **Run Doctor**
+   - **Send Test Prompt**
+6. Use **Runtime health** to confirm the bundled runtime, provider config, workspace, and Telegram status.
+7. Click **Copy Diagnostic Report** when asking for help. The report avoids API keys and other secrets.
+8. Turn on **Jarvis mode** when you want the higher-level command center instead of the standard Chat view.
 
 ## Claude setup
 

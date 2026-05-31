@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, clipboard } = require('electron');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -164,6 +164,7 @@ function runCommand({ id, title, command, args = [], cwd }) {
     return { ok: false, error: 'Another SafeClaw command is already running.' };
   }
 
+  fs.mkdirSync(cwd, { recursive: true });
   send('command-output', { id, type: 'start', text: `==> ${title}\n$ ${[command, ...args].join(' ')}\n` });
 
   runningProcess = spawn(command, args, {
@@ -211,12 +212,40 @@ ipcMain.handle('defaults', () => DEFAULTS);
 ipcMain.handle('runtime-info', (_event, settings = {}) => {
   const bundled = bundledSafeclawBin();
   const venv = safeclawBin(settings.installDir || DEFAULTS.installDir);
+  const installDir = settings.installDir || DEFAULTS.installDir;
+  const envPath = path.join(installDir, '.env');
+  const env = parseEnvFile(envPath);
+  const workspace = workspacePath(settings);
+  let workspaceWritable = false;
+  try {
+    fs.mkdirSync(workspace, { recursive: true });
+    fs.accessSync(workspace, fs.constants.W_OK);
+    workspaceWritable = true;
+  } catch (_error) {
+    workspaceWritable = false;
+  }
   return {
+    appVersion: app.getVersion(),
     bundled: Boolean(bundled),
     bundledPath: bundled,
     venv: fs.existsSync(venv),
     venvPath: venv,
+    envPath,
+    configExists: fs.existsSync(envPath),
+    providerConfigured: Boolean(settings.apiKey || env.OPENAI_API_KEY),
+    baseUrl: settings.baseUrl || env.OPENAI_BASE_URL || DEFAULTS.baseUrl,
+    model: settings.model || env.OPENAI_MODEL || DEFAULTS.model,
+    workspace,
+    workspaceWritable,
+    permissionProfile: settings.permissionProfile || env.SAFECLAW_PERMISSION_PROFILE || DEFAULTS.permissionProfile,
+    telegramConfigured: Boolean(settings.telegramToken || env.TELEGRAM_BOT_TOKEN),
+    allowedTelegramUsersConfigured: Boolean(settings.allowedTelegramUsers || env.SAFECLAW_ALLOWED_TELEGRAM_USERS),
   };
+});
+
+ipcMain.handle('copy-text', (_event, text) => {
+  clipboard.writeText(String(text || ''));
+  return { ok: true };
 });
 
 ipcMain.handle('load-env', (_event, installDir) => {

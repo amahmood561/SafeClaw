@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('safeclaw', {
   defaults: () => ipcRenderer.invoke('defaults'),
   runtimeInfo: (settings) => ipcRenderer.invoke('runtime-info', settings),
+  copyText: (text) => ipcRenderer.invoke('copy-text', text),
   loadEnv: (installDir) => ipcRenderer.invoke('load-env', installDir),
   saveEnv: (settings) => ipcRenderer.invoke('save-env', settings),
   install: (settings) => ipcRenderer.invoke('install-safeclaw', settings),

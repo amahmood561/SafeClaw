@@ -40,6 +40,31 @@
       </header>
 
       <section id="setup" class="view active">
+        <div class="panel first-run">
+          <div class="first-run-copy">
+            <p class="eyebrow">First run</p>
+            <h2>Go from fresh DMG to verified local assistant.</h2>
+            <p>Follow these in order: save setup, test the provider, run Doctor, then send a tiny first prompt. The packaged runtime should show as ready without Xcode.</p>
+          </div>
+          <div class="first-run-actions">
+            <button id="firstRunSaveBtn" class="primary">1. Save Setup</button>
+            <button id="firstRunProviderBtn">2. Test Provider</button>
+            <button id="firstRunDoctorBtn">3. Run Doctor</button>
+            <button id="firstRunPromptBtn">4. Send Test Prompt</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Runtime health</h3>
+              <p>Proof that the app can run locally before users start debugging symptoms.</p>
+            </div>
+            <button id="copyDiagnosticsBtn">Copy Diagnostic Report</button>
+          </div>
+          <div id="runtimeHealthGrid" class="health-grid" aria-live="polite"></div>
+        </div>
+
         <div class="panel intro">
           <div>
             <h2>Get SafeClaw ready without living in Terminal.</h2>

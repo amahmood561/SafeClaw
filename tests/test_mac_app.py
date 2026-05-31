@@ -53,6 +53,13 @@ def test_electron_app_ui_has_expected_sections():
         "Save Setup",
         "Developer Install / Update",
         "runtimeHint",
+        "firstRunSaveBtn",
+        "firstRunProviderBtn",
+        "firstRunDoctorBtn",
+        "firstRunPromptBtn",
+        "runtimeHealthGrid",
+        "copyDiagnosticsBtn",
+        "Copy Diagnostic Report",
         "Provider preset",
         "Test Provider",
         "Run Task",
@@ -146,7 +153,7 @@ def test_electron_chat_fluidity_features_are_wired():
         assert text in main
     assert "SAFECLAW_EVENT_STREAM" in main
 
-    for text in ["sessions", "loadSession", "renameSession", "deleteSession", "writeTaskStatus", "approve"]:
+    for text in ["sessions", "loadSession", "renameSession", "deleteSession", "writeTaskStatus", "approve", "copyText"]:
         assert text in preload
 
     for text in [
@@ -223,6 +230,13 @@ def test_electron_chat_fluidity_features_are_wired():
         "Huge file warning",
         "jarvis-enabled",
         "jarvis-list-item",
+        "renderRuntimeHealth",
+        "diagnosticReport",
+        "copyDiagnostics",
+        "sendFirstRunPrompt",
+        "SafeClaw Diagnostic Report",
+        "Copied diagnostic report without secrets",
+        "health-card",
     ]:
         assert text in renderer + styles
 
@@ -252,6 +266,8 @@ def test_electron_setup_preserves_and_auto_saves_secrets():
     assert "runtimeInfo" in PRELOAD_JS.read_text()
     assert "refreshRuntimeInfo" in renderer
     assert "Gumroad users can save setup" in renderer
+    assert "copy-text" in main
+    assert "clipboard.writeText" in main
 
 
 def test_readme_references_mac_app_screenshots():

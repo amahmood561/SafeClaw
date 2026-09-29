@@ -53,13 +53,15 @@ first thing `doctor` says is **OpenAI API key — FAIL**.
 wrapper. Verified working: `claude -p --output-format json` uses an existing Claude Code login,
 returns structured JSON and a resumable `session_id`, with no key anywhere.
 
-- [ ] `claude-cli` provider — subprocess to the Claude Code the user already has.
-- [ ] Session resume wired into `sessions.py` so it is a conversation, not one-shot calls.
-- [ ] Cost surfaced live. A one-word test reply cost $0.28; users must see the meter.
-- [ ] Claude Code's own tools stay **disabled** (`--disallowed-tools`). Claude is the brain,
+- [x] `claude-cli` provider — subprocess to the Claude Code the user already has.
+- [~] Session resume: **deliberately not used.** SafeClaw compacts its own
+      history, so a resumed CLI session would keep everything and the two would
+      silently diverge. Each call sends the full rendered history instead.
+- [x] Cost surfaced live. A one-word test reply cost $0.28; users must see the meter.
+- [x] Claude Code's own tools stay **disabled** (`--disallowed-tools`). Claude is the brain,
       SafeClaw keeps the hands. Otherwise the permission model is bypassed and the product has
       no point.
-- [ ] Three modes, visible in the chrome:
+- [x] Three modes, offered by `safeclaw init`:
 
 | Mode | Data leaves? | Cost | Needs |
 |---|---|---|---|
@@ -68,6 +70,22 @@ returns structured JSON and a resumable `session_id`, with no key anywhere.
 | API key | Yes | Per token | OpenAI / OpenRouter key |
 
 **Gate:** install → log into Claude Code → useful result, with zero keys entered anywhere.
+**Met.** A two-step task (list the workspace, read a file, report) ran end to end in 10.4s.
+
+### Measured while building this
+
+- Replacing Claude Code's system prompt rather than appending to it took a call
+  from **80s / $0.71 to 14s / $0.24**. Appending left the CLI answering as a
+  coding assistant that had lost its tools, explaining what it could not do
+  instead of requesting a SafeClaw tool.
+- Without an explicit "you have no direct access to this machine", the model
+  **invented a plausible file listing** rather than calling `list_files`. With
+  it, 3/3 runs produced a tool call. This is prompt adherence, not a guarantee:
+  the loop must keep tolerating a prose reply where a tool call was expected.
+- Invocations are isolated. Verified by planting a code word in one call and
+  failing to recall it in the next.
+- Cost is real: **$0.03 to $0.24 per call** on the user's own subscription. The
+  meter is surfaced on every message as `_cost_usd`.
 
 ---
 

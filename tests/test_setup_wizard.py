@@ -74,3 +74,12 @@ def test_hosted_choice_still_works_for_people_who_want_it(tmp_path):
     values = hosted_choice("groq", "test-key-not-real")
     assert values["OPENAI_API_KEY"] == "test-key-not-real"
     assert "groq" in values["OPENAI_BASE_URL"]
+
+
+def test_claude_cli_choice_needs_no_key_and_no_endpoint():
+    from safeclaw.setup_wizard import claude_cli_choice
+
+    values = claude_cli_choice()
+    assert values["SAFECLAW_PROVIDER_PRESET"] == "claude-cli"
+    assert values["OPENAI_API_KEY"] == "", "the whole point is that there is no key"
+    assert not values["OPENAI_BASE_URL"].startswith("http"), "completions are a subprocess, not a request"

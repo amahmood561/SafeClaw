@@ -24,9 +24,18 @@ safeclaw doctor        # blocking / optional / healthy
 safeclaw chat
 ```
 
-`init` defaults to a local model through [Ollama](https://ollama.com), so nothing
-leaves your machine and there is no key to enter. A hosted provider is the opt-in,
-not the requirement.
+`init` offers three ways to run, and defaults to the first:
+
+| Mode | Data leaves your machine? | Cost | Needs |
+|---|---|---|---|
+| **Local** | No | Free | [Ollama](https://ollama.com) |
+| **Your Claude Code login** | Yes | Your existing subscription | [Claude Code](https://claude.com/claude-code), logged in |
+| **Hosted API** | Yes | Per token | An OpenAI / Groq / OpenRouter key |
+
+The middle one is worth knowing about: if you already use Claude Code, SafeClaw can
+borrow that login by shelling out to it. **No API key anywhere.** Claude Code's own
+tools are disabled for those calls, so Claude decides what to do and SafeClaw's
+permission profiles still perform every action.
 
 ## Product direction
 

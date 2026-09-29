@@ -1,5 +1,6 @@
 import os
 import platform
+import shutil
 import socket
 import sys
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from .config import (
     BASE_URL,
     MAX_TOOL_STEPS,
     MODEL,
+    PROVIDER_PRESET,
     PERMISSION_PROFILE,
     SAFECLAW_ALLOWED_TELEGRAM_USERS,
     SAFECLAW_ALLOWED_SENDERS,
@@ -120,17 +122,30 @@ def run_doctor(port: int = 8080) -> list[Check]:
         )
     )
 
-    key_ok = bool(API_KEY and API_KEY != "your_key_here")
-    checks.append(
-        Check(
-            "OpenAI API key",
-            _status(key_ok),
-            "set" if key_ok else "missing",
-            "Set OPENAI_API_KEY in .env." if not key_ok else "",
+    if PROVIDER_PRESET == "claude-cli":
+        # This path has no key by design. Check the thing it actually needs.
+        claude_path = shutil.which("claude")
+        checks.append(
+            Check(
+                "Claude Code",
+                _status(bool(claude_path)),
+                claude_path or "not found",
+                "" if claude_path else "Install Claude Code and run `claude` once to log in.",
+            )
         )
-    )
+        checks.append(Check("API key", "ok", "not required for claude-cli"))
+    else:
+        key_ok = bool(API_KEY and API_KEY != "your_key_here")
+        checks.append(
+            Check(
+                "OpenAI API key",
+                _status(key_ok),
+                "set" if key_ok else "missing",
+                "Set OPENAI_API_KEY in .env." if not key_ok else "",
+            )
+        )
 
-    checks.append(Check("Model", "ok", MODEL))
+    checks.append(Check("Model", "ok", MODEL or "(chosen by claude)"))
     checks.append(Check("Base URL", "ok", BASE_URL))
 
     workspace_ok = WORKSPACE.exists() and WORKSPACE.is_dir() and os.access(WORKSPACE, os.W_OK)

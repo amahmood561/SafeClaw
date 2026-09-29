@@ -1,7 +1,7 @@
 import json
 
 import requests
-from .config import API_KEY, BASE_URL, MODEL
+from .config import API_KEY, BASE_URL, MODEL, PROVIDER_PRESET
 
 SYSTEM_PROMPT = """
 You are SafeClaw, a self-hosted agent with explicit permissions.
@@ -66,7 +66,17 @@ def provider_test(api_key=None, base_url=None, model=None, timeout=30):
         "content": content,
     }
 
+def using_claude_cli() -> bool:
+    return PROVIDER_PRESET == "claude-cli"
+
+
 def complete_message(messages, tools=None, model=None):
+    if using_claude_cli():
+        # Imported here: claude_cli imports SYSTEM_PROMPT and LLMError from this
+        # module, so a top-level import would be circular.
+        from .claude_cli import complete_message as claude_complete
+        return claude_complete(messages, tools=tools, model=model or None)
+
     if not API_KEY or API_KEY == "your_key_here":
         raise LLMError("Missing OPENAI_API_KEY. Add it to your .env file.")
 
@@ -90,6 +100,15 @@ def complete_message(messages, tools=None, model=None):
 
 
 def complete_message_stream(messages, model=None):
+    if using_claude_cli():
+        # The CLI returns one complete reply, so there is nothing to stream.
+        # Yield it whole rather than pretending to stream and dropping content.
+        from .claude_cli import complete_message as claude_complete
+        content = claude_complete(messages, model=model or None).get("content", "")
+        if content:
+            yield content
+        return
+
     if not API_KEY or API_KEY == "your_key_here":
         raise LLMError("Missing OPENAI_API_KEY. Add it to your .env file.")
 

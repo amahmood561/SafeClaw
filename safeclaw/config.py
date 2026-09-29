@@ -16,6 +16,9 @@ APPROVAL_MODE = os.getenv("SAFECLAW_APPROVAL_MODE", "ask").lower()
 # mid-task with no explanation. This is a safety net against runaway loops, not a
 # budget: the loop normally ends because the model stopped asking for tools.
 MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "50"))
+# Which provider the completions go to. "claude-cli" shells out to a local Claude
+# Code login instead of calling an HTTP endpoint, so it needs no API key.
+PROVIDER_PRESET = os.getenv("SAFECLAW_PROVIDER_PRESET", "openai")
 SQLITE_DATABASES = os.getenv("SAFECLAW_SQLITE_DATABASES", "")
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")

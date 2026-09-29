@@ -14,6 +14,14 @@ class ProviderPreset:
 
 
 PROVIDER_PRESETS: dict[str, ProviderPreset] = {
+    "claude-cli": ProviderPreset(
+        id="claude-cli",
+        name="Claude Code (no API key)",
+        base_url="subprocess://claude",
+        model="",
+        api_key_hint="none - uses your existing Claude Code login",
+        notes="Shells out to the `claude` command you are already logged into. No key to paste. Billed to that subscription.",
+    ),
     "openai": ProviderPreset(
         id="openai",
         name="OpenAI",

@@ -6,7 +6,15 @@ from .agent import emit_event, run_task
 from .database import describe_database, describe_table, list_databases, run_readonly_query, test_database
 from .doctor import REPO_ROOT, doctor_summary, group_checks, run_doctor
 from .providers import PROVIDER_PRESETS
-from .setup_wizard import apply_to_env, detect_ollama, hosted_choice, local_choice, suggest_local_model
+from .setup_wizard import (
+    apply_to_env,
+    claude_cli_choice,
+    detect_claude_cli,
+    detect_ollama,
+    hosted_choice,
+    local_choice,
+    suggest_local_model,
+)
 from .sessions import (
     compact_session,
     edit_memory,
@@ -80,9 +88,14 @@ def init(force: bool = False):
         console.print("  [yellow]1[/yellow]  Local model — Ollama is running but has no models. Run: ollama pull qwen2.5")
     else:
         console.print("  [dim]1  Local model — Ollama not detected. Install from https://ollama.com[/dim]")
-    console.print("  [cyan]2[/cyan]  Hosted API (OpenAI, Groq, OpenRouter) — faster, needs a key")
+    claude_path = detect_claude_cli()
+    if claude_path:
+        console.print("  [cyan]2[/cyan]  Your Claude Code login — smarter, no API key, billed to that subscription")
+    else:
+        console.print("  [dim]2  Claude Code — not installed. See https://claude.com/claude-code[/dim]")
+    console.print("  [cyan]3[/cyan]  Hosted API (OpenAI, Groq, OpenRouter) — needs a key")
 
-    default = "1" if (detected["running"] and suggested) else "2"
+    default = "1" if (detected["running"] and suggested) else ("2" if claude_path else "3")
     choice = console.input(f"[bold cyan]choice [{default}]>[/bold cyan] ").strip() or default
 
     if choice == "1":
@@ -91,8 +104,15 @@ def init(force: bool = False):
             console.print("[red]No local model available.[/red] Run: ollama pull qwen2.5, then safeclaw init --force")
             raise typer.Exit(1)
         console.print(f"[green]Local mode.[/green] Model {values['OPENAI_MODEL']}. Nothing leaves this machine.")
+    elif choice == "2":
+        if not claude_path:
+            console.print("[red]The `claude` command was not found.[/red] Install Claude Code, then re-run.")
+            raise typer.Exit(1)
+        values = claude_cli_choice()
+        console.print("[green]Claude Code mode.[/green] No API key. Requests are billed to that subscription,")
+        console.print("and prompts leave this machine — pick option 1 if that matters.")
     else:
-        console.print("Providers: " + ", ".join(p for p in PROVIDER_PRESETS if p != "custom"))
+        console.print("Providers: " + ", ".join(p for p in PROVIDER_PRESETS if p not in {"custom", "claude-cli"}))
         provider = console.input("[bold cyan]provider [openai]>[/bold cyan] ").strip() or "openai"
         api_key = console.input("[bold cyan]api key>[/bold cyan] ").strip()
         if not api_key:

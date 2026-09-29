@@ -8,6 +8,7 @@ an API key the opt-in.
 from __future__ import annotations
 
 import json
+import shutil
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -73,6 +74,21 @@ def local_choice(models: list[str]) -> dict[str, str] | None:
         return None
     preset = PROVIDER_PRESETS["ollama"]
     return env_lines("ollama", model, preset.base_url, api_key="ollama")
+
+
+def detect_claude_cli() -> str | None:
+    """Path to the `claude` binary, if this machine already has one logged in."""
+    return shutil.which("claude")
+
+
+def claude_cli_choice() -> dict[str, str]:
+    """No key, no endpoint: completions are a subprocess to the local CLI."""
+    return {
+        "SAFECLAW_PROVIDER_PRESET": "claude-cli",
+        "OPENAI_BASE_URL": "subprocess://claude",
+        "OPENAI_MODEL": "",
+        "OPENAI_API_KEY": "",
+    }
 
 
 def hosted_choice(provider_id: str, api_key: str) -> dict[str, str]:

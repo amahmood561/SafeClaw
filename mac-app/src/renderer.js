@@ -69,6 +69,10 @@ const viewTitles = {
 };
 
 let activeChatResponse = null;
+// Tool calls behind the answer currently being produced. "Inspectable tool use"
+// is the pitch; without keeping these, the evidence for an answer disappears
+// the moment the answer arrives.
+let activeProvenance = [];
 let activeChatItem = null;
 let activeChatHadEvents = false;
 let lastChatPrompt = '';
@@ -868,6 +872,43 @@ function setMessageState(item, state) {
   if (stateNode) stateNode.textContent = state;
 }
 
+function renderProvenance(item, steps) {
+  if (!item || !steps || !steps.length) return;
+  item.querySelector('.why-block')?.remove();
+
+  const details = document.createElement('details');
+  details.className = 'why-block';
+  const rows = steps.map((step) => {
+    const outcome = step.error ? 'error' : (step.denied ? 'denied' : 'ok');
+    const mark = outcome === 'ok' ? '\u2713' : (outcome === 'denied' ? '\u2715' : '!');
+    return `<div class="why-row ${outcome}">
+      <span class="why-mark">${mark}</span>
+      <code>${escapeHtml(step.tool)}</code>
+      <span class="why-subject">${escapeHtml(step.subject || '')}</span>
+    </div>`;
+  }).join('');
+  const n = steps.length;
+  details.innerHTML = `
+    <summary>Why did it say that? <em>${n} tool call${n === 1 ? '' : 's'}</em></summary>
+    <div class="why-body">${rows}</div>`;
+  item.appendChild(details);
+}
+
+function recordProvenance(event) {
+  if (!event.tool) return;
+  if (event.type === 'tool_call') {
+    activeProvenance.push({
+      tool: event.tool,
+      subject: event.subject || event.arguments_preview || '',
+    });
+    return;
+  }
+  const last = [...activeProvenance].reverse().find((s) => s.tool === event.tool);
+  if (!last) return;
+  if (event.type === 'tool_error') last.error = true;
+  if (event.type === 'tool_denied' || event.type === 'approval_denied') last.denied = true;
+}
+
 function addChatMessage(role, text = '', state = 'done') {
   const empty = document.querySelector('.empty-chat');
   if (empty) empty.remove();
@@ -998,6 +1039,7 @@ function handleStructuredEvent(event) {
   if (['tool_call', 'tool_started', 'tool_result', 'tool_message', 'tool_blocked',
        'tool_denied', 'approval_required', 'approval_denied'].includes(event.type)) {
     recordLedger(event);
+    recordProvenance(event);
   }
   if (['tool_call', 'tool_started', 'tool_result', 'tool_message', 'tool_blocked'].includes(event.type)) {
     addToolActivity(event);
@@ -1005,6 +1047,7 @@ function handleStructuredEvent(event) {
   }
   if (event.type === 'tool_error' && activeChatResponse) {
     recordLedger(event);
+    recordProvenance(event);
     addToolActivity(event);
     addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
   }
@@ -1019,6 +1062,7 @@ function handleStructuredEvent(event) {
     setMessageState(activeChatItem, event.decision === 'allowed' ? 'running' : 'stopped');
   }
   if (event.type === 'task_done') {
+    renderProvenance(activeChatItem, activeProvenance);
     if (activeChatResponse && !getResponseText(activeChatResponse).trim() && event.content) {
       setResponseText(activeChatResponse, event.content);
     }
@@ -1291,21 +1335,50 @@ function currentSessionArgs(command, extra = []) {
   return [command, ...extra, '--session', chatSessionId()];
 }
 
+function renderDiffPreview(diff) {
+  // "Approve write_file to notes.md" asks someone to authorise something they
+  // cannot see. Show the change before it happens, not after.
+  if (!diff) return '';
+  if (diff === '(no change)') {
+    return '<div class="approval-diff empty">This would not change the file.</div>';
+  }
+  const body = diff.split('\n').map((line) => {
+    let cls = 'ctx';
+    if (line.startsWith('+++') || line.startsWith('---')) cls = 'meta';
+    else if (line.startsWith('@@')) cls = 'hunk';
+    else if (line.startsWith('+')) cls = 'add';
+    else if (line.startsWith('-')) cls = 'del';
+    return `<span class="dl ${cls}">${escapeHtml(line) || '&nbsp;'}</span>`;
+  }).join('');
+  const added = diff.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++')).length;
+  const removed = diff.split('\n').filter((l) => l.startsWith('-') && !l.startsWith('---')).length;
+  return `
+    <details class="approval-diff" open>
+      <summary>Proposed change <em>+${added} / -${removed}</em></summary>
+      <div class="diff-body">${body}</div>
+    </details>`;
+}
+
 function renderApprovalCard(kind, detail, event = {}) {
   const tray = $('approvalTray');
   tray.hidden = false;
   tray.innerHTML = '';
   const card = document.createElement('div');
   card.className = 'approval-card';
+  // Escaped throughout: kind, reason and subject all originate in tool output,
+  // and a filename is enough to inject markup into this card otherwise.
+  const facts = [
+    event.subject ? `Subject: ${event.subject}` : detail,
+    event.profile ? `Profile: ${event.profile}` : '',
+    event.arguments_preview ? `Args: ${event.arguments_preview}` : '',
+  ].filter(Boolean).join('\n');
+
   card.innerHTML = `
     <span class="tag">Needs approval</span>
-    <h3>${kind}</h3>
-    <p>${event.reason || 'SafeClaw needs approval before continuing.'}</p>
-    <pre>${[
-      event.subject ? `Subject: ${event.subject}` : detail,
-      event.profile ? `Profile: ${event.profile}` : '',
-      event.arguments_preview ? `Args: ${event.arguments_preview}` : '',
-    ].filter(Boolean).join('\n')}</pre>
+    <h3>${escapeHtml(kind)}</h3>
+    <p>${escapeHtml(event.reason || 'SafeClaw needs approval before continuing.')}</p>
+    ${renderDiffPreview(event.diff)}
+    <pre>${escapeHtml(facts)}</pre>
   `;
   const actions = document.createElement('div');
   actions.className = 'button-row wrap';
@@ -1466,6 +1539,7 @@ async function sendChat() {
   const assistantMessage = addChatMessage('assistant', '', 'running');
   activeChatItem = assistantMessage.item;
   activeChatResponse = assistantMessage.body;
+  activeProvenance = [];
   activeChatHadEvents = false;
   providerErrorActive = false;
   setStatus('Chatting', 'running');

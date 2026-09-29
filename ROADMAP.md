@@ -100,9 +100,10 @@ Every tool has chat. Nobody else has this.
       asked for and refused reads as `refused`, not as something it touched.
 - [x] Profile switcher in the chrome, not a config file. It writes through to the fields the
       chat actually reads, so there is one control rather than several that can disagree.
-- [ ] Diff preview inside approval cards, before the write.
-- [ ] "Why did it do that?" — one click from any result to the tool calls behind it.
-      Inspectable tool use is in the pitch; make it a button.
+- [x] Diff preview inside approval cards, before the write. A unified diff computed
+      against what is on disk, truncated rather than flooding the card.
+- [x] "Why did it do that?" — every answer carries the calls that produced it, marked
+      ok / denied / failed. Inspectable tool use is now a button, not a claim.
 - [ ] Pick one audience and write their landing page:
       1. **People who cannot send data to OpenAI** — lawyers, clinics, accountants. Real
          budget, unsolved problem, and "runs entirely on your machine" is the whole pitch.

@@ -93,3 +93,104 @@ def test_the_ledger_counts_results_not_requests():
     assert "✕ write 1 refused" in refused
     assert "✓ write" not in refused, "a refused tool must never be counted as used"
     assert "✓ read 2 calls" in refused, "real work must still be counted"
+
+
+# --- approval diff ----------------------------------------------------------
+
+from safeclaw.tools import WORKSPACE, approval_diff
+
+
+def test_a_write_shows_what_would_change(workspace):
+    (workspace / "notes.txt").write_text("alpha\nbeta\ngamma\n")
+    diff = approval_diff("write_file", {"path": "notes.txt", "content": "alpha\nBETA\ngamma\n"})
+    assert "-beta" in diff
+    assert "+BETA" in diff
+    assert "alpha" in diff, "context lines make the change readable"
+
+
+def test_a_new_file_diffs_against_nothing(workspace):
+    diff = approval_diff("create_file", {"path": "fresh.txt", "content": "hello\n"})
+    assert "/dev/null" in diff
+    assert "+hello" in diff
+
+
+def test_a_delete_shows_what_is_being_lost(workspace):
+    (workspace / "doomed.txt").write_text("important\n")
+    diff = approval_diff("delete_file", {"path": "doomed.txt"})
+    assert "-important" in diff
+
+
+def test_an_edit_that_changes_nothing_says_so(workspace):
+    (workspace / "same.txt").write_text("unchanged\n")
+    assert approval_diff("write_file", {"path": "same.txt", "content": "unchanged\n"}) == "(no change)"
+
+
+def test_a_long_diff_is_truncated_rather_than_flooding_the_card(workspace):
+    (workspace / "big.txt").write_text("".join(f"line {i}\n" for i in range(400)))
+    diff = approval_diff("write_file", {"path": "big.txt", "content": "replaced\n"}, max_lines=20)
+    assert len(diff.splitlines()) <= 21
+    assert "more lines" in diff
+
+
+def test_tools_that_change_nothing_on_disk_have_no_diff(workspace):
+    for tool in ("fetch_url", "shell", "send_whatsapp", "read_file"):
+        assert approval_diff(tool, {"path": "x", "url": "y", "command": "z"}) is None
+
+
+def test_a_path_escaping_the_workspace_produces_no_diff(workspace):
+    # safe_path raises for these; the card must not leak file contents from
+    # outside the workspace on the way to being refused.
+    assert approval_diff("write_file", {"path": "../../etc/passwd", "content": "x"}) is None
+
+
+def test_the_approval_event_carries_the_diff():
+    source = (ROOT / "safeclaw" / "tools.py").read_text()
+    block = source.split('"type": "approval_required"', 1)[1].split("})", 1)[0]
+    assert '"diff"' in block
+
+
+# --- the card ---------------------------------------------------------------
+
+def test_the_approval_card_escapes_tool_supplied_text():
+    """A filename is enough to inject markup otherwise.
+
+    kind, reason and subject all originate in tool output, which is not trusted.
+    """
+    source = RENDERER.read_text()
+    card = source.split("function renderApprovalCard", 1)[1].split("const actions", 1)[0]
+    assert "${kind}" not in card, "raw interpolation of tool-supplied text"
+    assert "escapeHtml(kind)" in card
+    assert "escapeHtml(event.reason" in card
+
+
+def test_the_diff_preview_escapes_every_line():
+    source = RENDERER.read_text()
+    body = source.split("function renderDiffPreview", 1)[1].split("\nfunction ", 1)[0]
+    assert "escapeHtml(line)" in body
+
+
+# --- provenance -------------------------------------------------------------
+
+def test_an_answer_keeps_the_calls_that_produced_it():
+    source = RENDERER.read_text()
+    assert "function recordProvenance" in source
+    assert "function renderProvenance" in source
+    # Reset per turn, or one answer would show another answer's evidence.
+    assert "activeProvenance = [];" in source
+
+
+def test_provenance_is_attached_when_the_answer_lands():
+    # There are two task_done handlers: one for the task panel, one for chat.
+    # The provenance block belongs to the chat one.
+    source = RENDERER.read_text()
+    handlers = source.split("if (event.type === 'task_done') {")[1:]
+    assert any("renderProvenance" in h[:400] for h in handlers), (
+        "no task_done handler attaches the calls behind the answer"
+    )
+
+
+def test_provenance_marks_denied_and_failed_calls():
+    source = RENDERER.read_text()
+    body = source.split("function recordProvenance", 1)[1].split("\nfunction ", 1)[0]
+    assert "tool_error" in body and "error = true" in body
+    assert "approval_denied" in body and "denied = true" in body

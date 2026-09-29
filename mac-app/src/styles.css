@@ -24,9 +24,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 28% 0%, rgba(36, 113, 79, 0.08), transparent 28%),
-    linear-gradient(180deg, #f8faf9 0%, var(--bg) 42%, #eef2f0 100%);
+  background: var(--bg);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: 0;
 }
@@ -38,30 +36,48 @@ textarea {
   font: inherit;
 }
 
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -1px;
+  border-color: var(--blue);
+}
+
 button {
-  min-height: 38px;
-  padding: 0 15px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
+  border-radius: 7px;
   color: var(--ink);
-  background: linear-gradient(180deg, #ffffff, #f6f8f7);
-  font-weight: 760;
+  background: var(--panel);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 1px 2px rgba(20, 28, 25, 0.05);
-  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+  transition: border-color 110ms ease, background 110ms ease;
 }
 
 button:hover {
-  border-color: #9facaa;
-  box-shadow: var(--shadow-tight);
-  transform: translateY(-1px);
+  border-color: var(--subtle);
+  background: var(--panel-soft);
 }
+
+button:active { background: var(--line); }
+
+button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 button.primary {
   border-color: var(--ink);
   color: white;
-  background: linear-gradient(180deg, #1b2522, #0d1412);
+  background: var(--ink);
 }
+
+button.primary:hover { background: #24302c; border-color: #24302c; }
 
 button.ghost {
   width: 100%;
@@ -916,9 +932,11 @@ body.dragging-chat .chat-drop-zone {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
+  color: var(--subtle);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .chat-message.user .chat-role {
@@ -1416,4 +1434,117 @@ pre#output {
   width: 100%;
   font-size: 11.5px;
   padding: 5px;
+}
+
+/* --- approval diff --------------------------------------------------------
+   The change itself, before it happens. A filename is not informed consent. */
+
+.approval-diff {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  overflow: hidden;
+}
+.approval-diff > summary {
+  cursor: pointer;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.approval-diff > summary::-webkit-details-marker { display: none; }
+.approval-diff > summary::before { content: "\25B8"; transition: transform .15s; }
+.approval-diff[open] > summary::before { transform: rotate(90deg); }
+.approval-diff > summary em {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  color: var(--subtle);
+  margin-left: auto;
+}
+.approval-diff.empty { padding: 9px 11px; font-size: 12px; color: var(--muted); }
+
+.diff-body {
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  background: var(--panel);
+}
+.diff-body .dl {
+  display: block;
+  padding: 0 11px;
+  white-space: pre;
+}
+.diff-body .add { background: color-mix(in srgb, var(--green) 11%, transparent); color: var(--green); }
+.diff-body .del { background: color-mix(in srgb, var(--red) 10%, transparent); color: var(--red); }
+.diff-body .hunk { color: var(--blue); background: var(--panel-soft); }
+.diff-body .meta { color: var(--subtle); }
+.diff-body .ctx { color: var(--ink); }
+
+/* --- why did it say that? -------------------------------------------------
+   Inspectable tool use is the pitch. This makes it a button rather than a
+   claim: one click from any answer to the calls that produced it. */
+
+.why-block {
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  overflow: hidden;
+}
+.why-block > summary {
+  cursor: pointer;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.why-block > summary::-webkit-details-marker { display: none; }
+.why-block > summary::before { content: "\25B8"; transition: transform .15s; }
+.why-block[open] > summary::before { transform: rotate(90deg); }
+.why-block > summary em {
+  font-style: normal;
+  color: var(--subtle);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.why-body { border-top: 1px solid var(--line); background: var(--panel); }
+
+.why-row {
+  display: grid;
+  grid-template-columns: 16px auto 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--line);
+}
+.why-row:last-child { border-bottom: 0; }
+.why-row .why-mark { text-align: center; font-weight: 700; }
+.why-row.ok .why-mark { color: var(--green); }
+.why-row.denied .why-mark { color: var(--red); }
+.why-row.error .why-mark { color: var(--amber); }
+.why-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink);
+  background: none;
+  padding: 0;
+}
+.why-row .why-subject {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

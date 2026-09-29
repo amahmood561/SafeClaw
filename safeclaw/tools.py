@@ -119,6 +119,63 @@ def _emit_event(event: dict[str, Any]) -> None:
     print(f"{EVENT_PREFIX}{json.dumps(event, default=str)}", file=sys.stderr, flush=True)
 
 
+def approval_diff(tool_name: str, arguments: dict[str, Any], max_lines: int = 60) -> str | None:
+    """A unified diff of what this write would actually change.
+
+    "Approve write_file to notes.md" asks someone to authorise something they
+    cannot see. This shows the change before it happens rather than after.
+    Returns None when there is nothing meaningful to show.
+    """
+    if tool_name == "apply_patch":
+        # Already a diff. Pass it through rather than diffing a diff.
+        patch = str(arguments.get("patch", "")).splitlines()
+        return "\n".join(patch[:max_lines]) + ("\n... (truncated)" if len(patch) > max_lines else "")
+
+    if tool_name not in {"write_file", "create_file", "edit_file", "delete_file"}:
+        return None
+
+    raw_path = arguments.get("path")
+    if not raw_path:
+        return None
+    try:
+        path = safe_path(str(raw_path))
+    except ValueError:
+        return None
+
+    try:
+        before = path.read_text().splitlines(keepends=True) if path.exists() else []
+    except (OSError, UnicodeDecodeError):
+        # Binary or unreadable. Do not pretend to show a diff of it.
+        return None
+
+    if tool_name == "delete_file":
+        after: list[str] = []
+    elif tool_name == "edit_file":
+        old, new = str(arguments.get("old", "")), str(arguments.get("new", ""))
+        if not old:
+            return None
+        after = "".join(before).replace(old, new).splitlines(keepends=True)
+    else:
+        after = str(arguments.get("content", "")).splitlines(keepends=True)
+
+    if before == after:
+        return "(no change)"
+
+    label = str(raw_path)
+    lines = list(difflib.unified_diff(
+        before, after,
+        fromfile=f"a/{label}" if before else "/dev/null",
+        tofile=f"b/{label}" if after else "/dev/null",
+        lineterm="",
+    ))
+    if not lines:
+        return "(no change)"
+    trimmed = lines[:max_lines]
+    if len(lines) > max_lines:
+        trimmed.append(f"... ({len(lines) - max_lines} more lines)")
+    return "\n".join(line.rstrip("\n") for line in trimmed)
+
+
 def _approval_subject(tool_name: str, arguments: dict[str, Any]) -> str:
     if tool_name == "shell":
         return str(arguments.get("command", ""))
@@ -176,6 +233,8 @@ def _ask_approval(tool_name: str, arguments: dict[str, Any], profile: str, appro
         "reason": _approval_reason(tool_name),
         "subject": _approval_subject(tool_name, arguments),
         "arguments_preview": _preview_arguments(arguments),
+        # So the person approving can see the change, not just its filename.
+        "diff": approval_diff(tool_name, arguments),
     })
     print("\nSafeClaw approval required", file=sys.stderr)
     print(f"Tool: {tool_name}", file=sys.stderr)

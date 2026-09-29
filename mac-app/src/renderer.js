@@ -137,6 +137,12 @@ function updateProviderHint() {
   $('providerHint').innerHTML = `${escapeHtml(preset.hint)} Click <strong>Save Config</strong> after changing credentials.`;
 }
 
+function syncLedgerProfile() {
+  const select = $('ledgerProfile');
+  if (select) select.value = ledgerProfile();
+  renderLedger();
+}
+
 function applyProviderPreset() {
   const chosen = $('providerPreset').value;
   const preset = providerPresets[chosen] || providerPresets.custom;
@@ -989,11 +995,16 @@ function handleStructuredEvent(event) {
   if (event.type === 'assistant_message' && activeChatResponse && !getResponseText(activeChatResponse).trim()) {
     setResponseText(activeChatResponse, event.content || '');
   }
+  if (['tool_call', 'tool_started', 'tool_result', 'tool_message', 'tool_blocked',
+       'tool_denied', 'approval_required', 'approval_denied'].includes(event.type)) {
+    recordLedger(event);
+  }
   if (['tool_call', 'tool_started', 'tool_result', 'tool_message', 'tool_blocked'].includes(event.type)) {
     addToolActivity(event);
     return;
   }
   if (event.type === 'tool_error' && activeChatResponse) {
+    recordLedger(event);
     addToolActivity(event);
     addResultBlock(activeChatResponse, 'error', event.content || `Tool error: ${event.tool}`);
   }
@@ -1795,9 +1806,168 @@ async function init() {
   renderAttachments();
   renderTaskHistory();
   publishTaskStatus();
+  initLedger();
   await refreshSessions();
   await loadChatSession(chatSessionId());
   startSessionAutoRefresh();
 }
 
 init();
+
+/* ---------------------------------------------------------------------------
+   Permission ledger
+
+   A running record of what SafeClaw actually touched this session, sitting
+   permanently beside the chat rather than inside a collapsible tray. Chat is
+   the part every agent has; this is the part that makes SafeClaw worth
+   choosing, so it is visible without being asked for.
+
+   The capability groupings mirror safeclaw/tools.py. `safeclaw capabilities
+   --json-out` returns the same shape from the enforced rules, and is the
+   source used whenever the CLI is reachable.
+--------------------------------------------------------------------------- */
+
+const CAPABILITY_TOOLS = {
+  read: ['list_files', 'read_file', 'read_many_files', 'load_attachment', 'search_files', 'diff_file', 'git_status', 'git_diff'],
+  write: ['write_file', 'create_file', 'edit_file', 'apply_patch', 'move_file', 'delete_file'],
+  shell: ['shell', 'run_tests'],
+  network: ['fetch_url', 'web_search'],
+  database: ['list_databases', 'describe_database', 'describe_table', 'run_readonly_query', 'test_database'],
+  messaging: ['send_whatsapp', 'send_telegram'],
+};
+
+const CAPABILITY_LABEL = {
+  read: 'read', write: 'write', shell: 'shell',
+  network: 'network', database: 'database', messaging: 'messaging',
+};
+
+// Which capabilities each profile permits. Kept in step with PROFILE_CAPABILITIES.
+const PROFILE_CAPABILITIES = {
+  readonly: ['read'],
+  'workspace-write': ['read', 'write'],
+  'network-allow': ['read', 'network'],
+  'shell-ask': ['read', 'shell'],
+  'shell-allow': ['read', 'shell'],
+  'messaging-allow': ['read', 'messaging'],
+  'db-readonly': ['read', 'database'],
+};
+
+const ledger = { counts: {}, pending: {}, denied: {} };
+
+function capabilityOf(tool) {
+  for (const [capability, tools] of Object.entries(CAPABILITY_TOOLS)) {
+    if (tools.includes(tool)) return capability;
+  }
+  return 'other';
+}
+
+function ledgerProfile() {
+  // Same precedence the chat itself uses, so the panel describes the profile
+  // tasks actually run under rather than a different field that looks similar.
+  return $('chatPermission')?.value || $('permissionProfile')?.value || 'readonly';
+}
+
+function resetLedger() {
+  ledger.counts = {};
+  ledger.pending = {};
+  ledger.denied = {};
+  renderLedger();
+}
+
+function recordLedger(event) {
+  const tool = event.tool;
+  if (!tool) return;
+  const capability = capabilityOf(tool);
+
+  if (event.type === 'approval_required') {
+    ledger.pending[capability] = (ledger.pending[capability] || 0) + 1;
+  } else if (event.type === 'tool_denied' || event.type === 'approval_denied') {
+    ledger.denied[capability] = (ledger.denied[capability] || 0) + 1;
+    ledger.pending[capability] = Math.max(0, (ledger.pending[capability] || 0) - 1);
+  } else if (event.type === 'tool_message' || event.type === 'tool_error') {
+    // Counted on the result, not the request: a tool that was asked for and
+    // refused has not touched anything, and saying it did would be a lie in
+    // the one panel that exists to be trusted.
+    ledger.counts[capability] = (ledger.counts[capability] || 0) + 1;
+    ledger.pending[capability] = Math.max(0, (ledger.pending[capability] || 0) - 1);
+  }
+  renderLedger();
+}
+
+function renderLedger() {
+  const list = $('ledgerList');
+  if (!list) return;
+  const profile = ledgerProfile();
+  const allowed = PROFILE_CAPABILITIES[profile] || PROFILE_CAPABILITIES.readonly;
+
+  const workspace = $('ledgerWorkspace');
+  if (workspace) {
+    const dir = $('workspace')?.value || './workspace';
+    workspace.textContent = dir;
+    workspace.title = dir;
+  }
+
+  list.innerHTML = '';
+  for (const capability of Object.keys(CAPABILITY_TOOLS)) {
+    const used = ledger.counts[capability] || 0;
+    const pending = ledger.pending[capability] || 0;
+    const denied = ledger.denied[capability] || 0;
+    const permitted = allowed.includes(capability);
+
+    let state = 'off';
+    let mark = '✕';
+    let detail = 'not permitted by this profile';
+    if (pending > 0) {
+      state = 'pending'; mark = '⏸';
+      detail = `${pending} awaiting your approval`;
+    } else if (used > 0) {
+      state = 'used'; mark = '✓';
+      detail = `${used} call${used === 1 ? '' : 's'}`;
+      if (denied > 0) detail += `, ${denied} refused`;
+    } else if (permitted) {
+      state = 'idle'; mark = '·';
+      detail = 'allowed, not used';
+    } else if (denied > 0) {
+      detail = `${denied} refused`;
+    }
+
+    const row = document.createElement('div');
+    row.className = `ledger-row ${state}`;
+    row.innerHTML = `
+      <span class="ledger-mark">${mark}</span>
+      <span class="ledger-name">${escapeHtml(CAPABILITY_LABEL[capability])}</span>
+      <span class="ledger-detail">${escapeHtml(detail)}</span>
+    `;
+    list.appendChild(row);
+  }
+}
+
+function initLedger() {
+  const select = $('ledgerProfile');
+  if (select && !select.options.length) {
+    for (const profile of Object.keys(PROFILE_CAPABILITIES)) {
+      const option = document.createElement('option');
+      option.value = profile;
+      option.textContent = profile;
+      select.appendChild(option);
+    }
+    select.value = ledgerProfile();
+    select.addEventListener('change', () => {
+      // One control, not several that can disagree. Changing it here changes
+      // the profile the next chat task actually runs under.
+      for (const id of ['chatPermission', 'permissionProfile']) {
+        const field = $(id);
+        if (field) {
+          field.value = select.value;
+          field.dispatchEvent(new Event('change'));
+        }
+      }
+      renderLedger();
+    });
+    for (const id of ['chatPermission', 'permissionProfile']) {
+      $(id)?.addEventListener('change', syncLedgerProfile);
+    }
+  }
+  $('ledgerResetBtn')?.addEventListener('click', resetLedger);
+  renderLedger();
+}

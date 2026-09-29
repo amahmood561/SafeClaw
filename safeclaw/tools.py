@@ -1038,3 +1038,41 @@ Permission profiles:
 
 This version supports automatic OpenAI-style function calling.
 """.strip()
+
+
+CAPABILITY_TOOLS = {
+    "read": READ_TOOLS,
+    "write": WRITE_TOOLS,
+    "shell": SHELL_TOOLS,
+    "network": NETWORK_TOOLS,
+    "database": DATABASE_TOOLS,
+    "messaging": MESSAGING_TOOLS,
+}
+
+
+def capability_of(tool_name: str) -> str:
+    for capability, names in CAPABILITY_TOOLS.items():
+        if tool_name in names:
+            return capability
+    return "other"
+
+
+def capability_report(profile: str | None = None) -> dict:
+    """What this profile can do, by capability. Consumed by the desktop ledger.
+
+    Derived from PROFILE_CAPABILITIES rather than restated, so the panel a user
+    reads can never disagree with the check that is actually enforced.
+    """
+    resolved = _normal_profile(profile)
+    allowed = PROFILE_CAPABILITIES[resolved]
+    return {
+        "profile": resolved,
+        "capabilities": {
+            capability: {
+                "allowed": bool(names & allowed),
+                "tools": sorted(names),
+                "needs_approval": bool(names & RISKY_TOOLS),
+            }
+            for capability, names in CAPABILITY_TOOLS.items()
+        },
+    }

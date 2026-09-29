@@ -95,9 +95,11 @@ each defaulting to the subscription when the `claude` binary is present. A two-s
 **Thesis:** the permission model **is** the product, and it is currently buried in a chat tray.
 Every tool has chat. Nobody else has this.
 
-- [ ] Persistent permission ledger beside the chat: profile, workspace, and a running list of
-      what it actually touched this session. That is the screenshot that sells it.
-- [ ] Profile switcher in the chrome, not a config file.
+- [x] Persistent permission ledger beside the chat: profile, workspace, and a running list of
+      what it actually touched this session. Counts results, never requests: a tool that was
+      asked for and refused reads as `refused`, not as something it touched.
+- [x] Profile switcher in the chrome, not a config file. It writes through to the fields the
+      chat actually reads, so there is one control rather than several that can disagree.
 - [ ] Diff preview inside approval cards, before the write.
 - [ ] "Why did it do that?" — one click from any result to the tool calls behind it.
       Inspectable tool use is in the pitch; make it a button.

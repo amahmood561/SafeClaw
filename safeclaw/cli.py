@@ -35,7 +35,7 @@ from .service import (
     stop_macos_whatsapp_service,
     uninstall_macos_whatsapp_service,
 )
-from .tools import available_tools
+from .tools import available_tools, capability_report
 from .config import WORKSPACE
 from .llm import LLMError, provider_test as run_provider_test
 from .providers import provider_presets_text
@@ -181,6 +181,27 @@ def chat(session: str = "default", model: str = "", permission_profile: str = ""
 def tools():
     """Show available tools."""
     console.print(available_tools())
+
+@app.command("capabilities")
+def capabilities(profile: str = "", json_out: bool = False):
+    """Show what a permission profile can and cannot do."""
+    report = capability_report(profile or None)
+    if json_out:
+        console.print_json(data=report)
+        return
+    table = Table(title=f"Profile: {report['profile']}", title_justify="left")
+    table.add_column("Capability")
+    table.add_column("Allowed")
+    table.add_column("Approval")
+    table.add_column("Tools")
+    for name, info in report["capabilities"].items():
+        table.add_row(
+            name,
+            "[green]yes[/green]" if info["allowed"] else "[red]no[/red]",
+            "required" if info["needs_approval"] else "-",
+            ", ".join(info["tools"][:4]) + ("..." if len(info["tools"]) > 4 else ""),
+        )
+    console.print(table)
 
 @app.command("provider-presets")
 def provider_presets():

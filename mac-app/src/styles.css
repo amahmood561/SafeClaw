@@ -1356,3 +1356,64 @@ pre#output {
     justify-items: start;
   }
 }
+
+/* --- permission ledger ----------------------------------------------------
+   Pinned above Sessions. The one panel in the app whose job is to be believed,
+   so it stays legible rather than decorative. */
+
+.ledger-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--blue) 6%);
+}
+.ledger-section h3 { margin-top: 0; }
+
+.ledger-profile {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.ledger-profile select { width: 100%; margin-top: 4px; }
+
+.ledger-workspace {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.ledger-list { display: flex; flex-direction: column; gap: 2px; }
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: 16px 74px 1fr;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 2px;
+  font-size: 12.5px;
+  border-radius: 5px;
+}
+.ledger-row .ledger-mark { text-align: center; font-weight: 700; }
+.ledger-row .ledger-name { font-weight: 600; }
+.ledger-row .ledger-detail { color: var(--muted); font-size: 11.5px; }
+
+/* Used is the state worth noticing, so it is the only one with a fill. */
+.ledger-row.used { background: color-mix(in srgb, var(--green) 12%, transparent); }
+.ledger-row.used .ledger-mark { color: var(--green); }
+.ledger-row.pending { background: color-mix(in srgb, var(--blue) 14%, transparent); }
+.ledger-row.pending .ledger-mark { color: var(--blue); }
+.ledger-row.idle .ledger-mark { color: var(--muted); }
+.ledger-row.off { opacity: 0.55; }
+.ledger-row.off .ledger-mark { color: var(--red); }
+
+.ledger-reset {
+  margin-top: 10px;
+  width: 100%;
+  font-size: 11.5px;
+  padding: 5px;
+}

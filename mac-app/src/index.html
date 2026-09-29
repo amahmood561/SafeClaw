@@ -207,6 +207,17 @@
             </div>
           </div>
           <aside class="chat-side panel">
+            <!-- The permission ledger. Every tool has a chat; this is the part
+                 nobody else has, so it is pinned above everything else. -->
+            <div class="side-section ledger-section">
+              <h3>Permissions</h3>
+              <label class="ledger-profile">Profile
+                <select id="ledgerProfile"></select>
+              </label>
+              <div id="ledgerWorkspace" class="ledger-workspace"></div>
+              <div id="ledgerList" class="ledger-list" aria-live="polite"></div>
+              <button id="ledgerResetBtn" class="ledger-reset">Clear session ledger</button>
+            </div>
             <div class="side-section">
               <h3>Sessions</h3>
               <div id="sessionList" class="session-list" aria-live="polite"></div>

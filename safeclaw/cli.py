@@ -4,7 +4,9 @@ from rich.panel import Panel
 from rich.table import Table
 from .agent import emit_event, run_task
 from .database import describe_database, describe_table, list_databases, run_readonly_query, test_database
-from .doctor import doctor_summary, run_doctor
+from .doctor import REPO_ROOT, doctor_summary, group_checks, run_doctor
+from .providers import PROVIDER_PRESETS
+from .setup_wizard import apply_to_env, detect_ollama, hosted_choice, local_choice, suggest_local_model
 from .sessions import (
     compact_session,
     edit_memory,
@@ -55,6 +57,53 @@ def _print_provider_error(exc: LLMError, events: bool = False) -> None:
     console.print(str(exc))
     if exc.code == "insufficient_quota" or exc.error_type == "insufficient_quota":
         console.print("Fix: check OpenAI API billing and quota at https://platform.openai.com/settings/organization/billing/overview")
+
+@app.command()
+def init(force: bool = False):
+    """Set up SafeClaw. Local by default, no API key required."""
+    env_path = REPO_ROOT / ".env"
+    if env_path.exists() and not force:
+        console.print(f"[yellow]{env_path} already exists.[/yellow] Re-run with --force to reconfigure.")
+        raise typer.Exit(0)
+    if not env_path.exists():
+        example = REPO_ROOT / ".env.example"
+        if example.exists():
+            env_path.write_text(example.read_text())
+
+    detected = detect_ollama()
+    suggested = suggest_local_model(detected["models"])
+
+    console.print(Panel.fit("SafeClaw setup", subtitle="how should SafeClaw think?"))
+    if detected["running"] and suggested:
+        console.print(f"  [green]1[/green]  Local model ([bold]{suggested}[/bold]) — nothing leaves this machine  [dim]recommended[/dim]")
+    elif detected["running"]:
+        console.print("  [yellow]1[/yellow]  Local model — Ollama is running but has no models. Run: ollama pull qwen2.5")
+    else:
+        console.print("  [dim]1  Local model — Ollama not detected. Install from https://ollama.com[/dim]")
+    console.print("  [cyan]2[/cyan]  Hosted API (OpenAI, Groq, OpenRouter) — faster, needs a key")
+
+    default = "1" if (detected["running"] and suggested) else "2"
+    choice = console.input(f"[bold cyan]choice [{default}]>[/bold cyan] ").strip() or default
+
+    if choice == "1":
+        values = local_choice(detected["models"])
+        if not values:
+            console.print("[red]No local model available.[/red] Run: ollama pull qwen2.5, then safeclaw init --force")
+            raise typer.Exit(1)
+        console.print(f"[green]Local mode.[/green] Model {values['OPENAI_MODEL']}. Nothing leaves this machine.")
+    else:
+        console.print("Providers: " + ", ".join(p for p in PROVIDER_PRESETS if p != "custom"))
+        provider = console.input("[bold cyan]provider [openai]>[/bold cyan] ").strip() or "openai"
+        api_key = console.input("[bold cyan]api key>[/bold cyan] ").strip()
+        if not api_key:
+            console.print("[red]A hosted provider needs a key.[/red]")
+            raise typer.Exit(1)
+        values = hosted_choice(provider, api_key)
+        console.print(f"[green]Hosted mode.[/green] {values['OPENAI_MODEL']} via {values['OPENAI_BASE_URL']}")
+
+    apply_to_env(env_path, values)
+    console.print(f"Wrote {env_path}")
+    console.print("\nNext:  [bold]safeclaw doctor[/bold]   then   [bold]safeclaw chat[/bold]")
 
 @app.command()
 def run(task: str, session: str = "default", model: str = "", permission_profile: str = "", events: bool = False):
@@ -132,26 +181,44 @@ def provider_test(base_url: str = "", model: str = ""):
     console.print(f"Response: {result['content']}")
 
 @app.command("doctor")
-def doctor(port: int = 8080, strict: bool = False):
+def doctor(port: int = 8080, strict: bool = False, verbose: bool = False):
     """Check local setup, config, WhatsApp, and service readiness."""
     checks = run_doctor(port=port)
-    table = Table(title="SafeClaw Doctor")
-    table.add_column("Check")
-    table.add_column("Status")
-    table.add_column("Detail")
-    table.add_column("Fix")
+    grouped = group_checks(checks)
     colors = {"ok": "green", "warn": "yellow", "fail": "red"}
     labels = {"ok": "OK", "warn": "WARN", "fail": "FAIL"}
-    for check in checks:
-        table.add_row(
-            check.name,
-            f"[{colors[check.status]}]{labels[check.status]}[/{colors[check.status]}]",
-            check.detail,
-            check.fix,
-        )
-    console.print(table)
-    summary = doctor_summary(checks)
-    console.print(f"Summary: {summary}")
+
+    # Grouped, not one flat list. A missing model and a missing Twilio token are
+    # not the same kind of problem, and a fifteen-row table says they are.
+    sections = [
+        ("blocking", "Blocking", "red", "These stop SafeClaw working. Fix these first."),
+        ("optional", "Optional", "yellow", "Integrations you can set up later, or never."),
+        ("healthy", "Healthy", "green", ""),
+    ]
+    for key, title, colour, blurb in sections:
+        items = grouped[key]
+        if not items:
+            continue
+        if key == "healthy" and not verbose:
+            console.print(f"[green]Healthy[/green]  {len(items)} check(s) passing. Use --verbose to list them.")
+            continue
+        table = Table(title=f"[{colour}]{title}[/{colour}] ({len(items)})", title_justify="left")
+        table.add_column("Check")
+        table.add_column("Status")
+        table.add_column("Detail")
+        table.add_column("Fix")
+        for check in items:
+            table.add_row(
+                check.name,
+                f"[{colors[check.status]}]{labels[check.status]}[/{colors[check.status]}]",
+                check.detail,
+                check.fix,
+            )
+        if blurb:
+            console.print(f"[dim]{blurb}[/dim]")
+        console.print(table)
+
+    console.print(f"Summary: {doctor_summary(checks)}")
     if strict and any(check.status == "fail" for check in checks):
         raise typer.Exit(1)
 

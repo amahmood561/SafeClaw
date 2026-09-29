@@ -29,12 +29,42 @@ VALID_APPROVAL_MODES = {"ask", "deny", "auto"}
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+# Which checks actually stop you using SafeClaw today. Everything else is either
+# an optional integration (WhatsApp, Telegram, background service) or context.
+OPTIONAL_CHECKS = {
+    "Twilio outbound",
+    "Allowed senders",
+    "Telegram bot",
+    "Allowed Telegram users",
+    "macOS service",
+    "Service file",
+}
+
+
 @dataclass
 class Check:
     name: str
     status: str
     detail: str
     fix: str = ""
+
+    @property
+    def tier(self) -> str:
+        """blocking | optional | healthy.
+
+        A failing optional check is still optional: not having Telegram set up
+        has never stopped anyone talking to their own assistant.
+        """
+        if self.name in OPTIONAL_CHECKS:
+            return "optional"
+        return "blocking" if self.status == "fail" else "healthy"
+
+
+def group_checks(checks: list[Check]) -> dict[str, list[Check]]:
+    grouped: dict[str, list[Check]] = {"blocking": [], "optional": [], "healthy": []}
+    for check in checks:
+        grouped[check.tier].append(check)
+    return grouped
 
 
 def _status(ok: bool, warning: bool = False) -> str:
@@ -206,10 +236,11 @@ def run_doctor(port: int = 8080) -> list[Check]:
 
 
 def doctor_summary(checks: list[Check]) -> str:
-    failures = sum(1 for check in checks if check.status == "fail")
-    warnings = sum(1 for check in checks if check.status == "warn")
-    if failures:
-        return f"{failures} failure(s), {warnings} warning(s)"
-    if warnings:
-        return f"0 failures, {warnings} warning(s)"
-    return "all checks passed"
+    grouped = group_checks(checks)
+    blocking = len(grouped["blocking"])
+    optional_gaps = sum(1 for c in grouped["optional"] if c.status != "ok")
+    if blocking:
+        return f"{blocking} blocking issue(s), {optional_gaps} optional integration(s) not set up"
+    if optional_gaps:
+        return f"ready to use. {optional_gaps} optional integration(s) not set up"
+    return "ready to use. everything configured"

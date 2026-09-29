@@ -201,9 +201,13 @@ def test_doctor_command_prints_summary(monkeypatch):
     result = invoke("doctor", "--port", "9999")
 
     assert result.exit_code == 0
-    assert "SafeClaw Doctor" in result.output
-    assert "Python" in result.output
     assert "all checks passed" in result.output
+    # Passing checks collapse to one line; the detail is behind --verbose so the
+    # things that need attention are not buried in fifteen healthy rows.
+    assert "Healthy" in result.output
+    assert "Python" not in result.output
+
+    assert "Python" in invoke("doctor", "--port", "9999", "--verbose").output
 
 
 def test_doctor_strict_exits_nonzero_on_failure(monkeypatch):

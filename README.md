@@ -14,9 +14,19 @@ Get SafeClaw on Gumroad: https://mahmoodify3.gumroad.com/l/safeclaw
 
 Latest GitHub macOS DMG release: https://github.com/amahmood561/SafeClaw/releases/latest
 
-Keywords: self-hosted AI assistant, local AI assistant, SafeClaw, Safe Claw,
-explicit permissions, WhatsApp assistant, Ollama assistant, local automation,
-SQLite database tools.
+## Quickstart
+
+```bash
+git clone https://github.com/amahmood561/SafeClaw && cd SafeClaw
+./install.sh
+safeclaw init          # local by default, no API key needed
+safeclaw doctor        # blocking / optional / healthy
+safeclaw chat
+```
+
+`init` defaults to a local model through [Ollama](https://ollama.com), so nothing
+leaves your machine and there is no key to enter. A hosted provider is the opt-in,
+not the requirement.
 
 ## Product direction
 

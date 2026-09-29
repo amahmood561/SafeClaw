@@ -11,7 +11,11 @@ WORKSPACE = Path(os.getenv("WORKSPACE", "./workspace")).resolve()
 ALLOW_SHELL = os.getenv("ALLOW_SHELL", "false").lower() == "true"
 PERMISSION_PROFILE = os.getenv("SAFECLAW_PERMISSION_PROFILE", "readonly")
 APPROVAL_MODE = os.getenv("SAFECLAW_APPROVAL_MODE", "ask").lower()
-MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "6"))
+# A real task routinely needs dozens of tool calls. Six was enough to read a file
+# and answer a question, and not enough to debug anything -- the model got cut off
+# mid-task with no explanation. This is a safety net against runaway loops, not a
+# budget: the loop normally ends because the model stopped asking for tools.
+MAX_TOOL_STEPS = int(os.getenv("MAX_TOOL_STEPS", "50"))
 SQLITE_DATABASES = os.getenv("SAFECLAW_SQLITE_DATABASES", "")
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")

@@ -295,7 +295,21 @@ def test_session_export_import(tmp_path):
     assert status["memories"] == 1
 
 
-def test_doctor_summary():
-    assert doctor_summary([Check("Python", "ok", "3.10")]) == "all checks passed"
-    assert doctor_summary([Check("Twilio", "warn", "missing")]) == "0 failures, 1 warning(s)"
-    assert doctor_summary([Check("Key", "fail", "missing"), Check("Twilio", "warn", "missing")]) == "1 failure(s), 1 warning(s)"
+def test_doctor_summary_leads_with_whether_you_are_blocked():
+    # Day one, "3 warnings" tells a new user nothing about whether they can start.
+    assert doctor_summary([Check("Python", "ok", "3.10")]) == "ready to use. everything configured"
+
+    # An unconfigured optional integration is not a problem with the install.
+    assert doctor_summary([Check("Twilio outbound", "warn", "missing")]) == (
+        "ready to use. 1 optional integration(s) not set up"
+    )
+
+    # A real failure is blocking and is counted separately from the optional gap.
+    assert doctor_summary(
+        [Check("OpenAI API key", "fail", "missing"), Check("Twilio outbound", "warn", "missing")]
+    ) == "1 blocking issue(s), 1 optional integration(s) not set up"
+
+
+def test_optional_integrations_never_count_as_blocking():
+    # Telegram not being set up has never stopped anyone using their own assistant.
+    assert doctor_summary([Check("Telegram bot", "fail", "missing")]).startswith("ready to use")

@@ -3,10 +3,12 @@ import sys
 from datetime import datetime
 from typing import Any, Callable
 
+from concurrent.futures import ThreadPoolExecutor
+
 from .config import MAX_TOOL_STEPS, MODEL, WORKSPACE
 from .llm import complete_message, complete_message_stream
 from .sessions import auto_compact_session, forget_memory, load_session, recall, remember, save_session, search_memory, session_status
-from .tools import TOOL_SPECS, available_tools, list_files, run_tool
+from .tools import READ_TOOLS, TOOL_SPECS, available_tools, list_files, run_tool
 
 SESSION_TOOL_SPECS: list[dict[str, Any]] = [
     {
@@ -100,7 +102,15 @@ def _tool_message(
         elif name == "session_status":
             result = json.dumps(session_status(session_id), indent=2)
         else:
-            result = run_tool(name, arguments, permission_profile=permission_profile, interactive=interactive)
+            try:
+                result = run_tool(name, arguments, permission_profile=permission_profile, interactive=interactive)
+            except Exception as exc:
+                # A raising tool used to abort the whole task. The model can almost
+                # always recover from a failure it is told about, so hand it back
+                # as a normal tool result instead of losing the turn.
+                result = f"Tool {name} failed: {type(exc).__name__}: {exc}"
+                if event_callback:
+                    event_callback({"type": "tool_error", "tool": name, "content": result})
     if event_callback:
         event_callback({
             "type": "tool_message",
@@ -148,6 +158,7 @@ User task:
 """
     session["messages"].append({"role": "user", "content": context})
     used_tools = False
+    tools_used: list[str] = []
     if event_callback:
         event_callback({
             "type": "task_started",
@@ -184,17 +195,38 @@ User task:
             break
         used_tools = True
         for tool_call in tool_calls:
-            session["messages"].append(
-                _tool_message(
-                    session_id,
-                    tool_call,
-                    permission_profile=active_profile,
-                    interactive=interactive,
-                    event_callback=event_callback,
-                )
-            )
+            tools_used.append(tool_call["function"]["name"])
+
+        run_one = lambda call: _tool_message(
+            session_id,
+            call,
+            permission_profile=active_profile,
+            interactive=interactive,
+            event_callback=event_callback,
+        )
+
+        # Independent reads can run at once. Anything that writes, or that might
+        # stop to ask for approval, stays strictly sequential -- order and the
+        # approval prompts both matter there.
+        names = [c["function"]["name"] for c in tool_calls]
+        if len(tool_calls) > 1 and all(n in READ_TOOLS for n in names):
+            with ThreadPoolExecutor(max_workers=min(len(tool_calls), 8)) as pool:
+                messages = list(pool.map(run_one, tool_calls))
+        else:
+            messages = [run_one(call) for call in tool_calls]
+        session["messages"].extend(messages)
+
+        # Compact inside the loop, not only at the end. A fifty-step task used to
+        # carry every message to the final call.
+        auto_compact_session(session)
     else:
-        result = "Stopped after reaching the tool step limit."
+        # Do not throw away the work. Say what was done and where it stopped.
+        summary = ", ".join(dict.fromkeys(tools_used)) or "nothing"
+        result = (
+            f"Stopped after the {MAX_TOOL_STEPS}-step tool limit. "
+            f"Used {len(tools_used)} tool calls ({summary}). "
+            "Raise MAX_TOOL_STEPS or ask for a narrower next step to continue."
+        )
 
     logs = WORKSPACE / ".safeclaw_logs"
     logs.mkdir(exist_ok=True)

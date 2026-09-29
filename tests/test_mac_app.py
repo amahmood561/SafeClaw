@@ -288,3 +288,33 @@ def test_mac_app_readme_documents_electron_flow():
     assert "npm start" in text
     assert "npm run build:mac" in text
     assert "mac-setup/" in text
+
+
+def test_mac_app_offers_the_subscription_path_first():
+    """A Gumroad customer should see the keyless option before the key fields."""
+    renderer = RENDERER_JS.read_text()
+    presets = renderer.split("const providerPresets = {", 1)[1]
+    assert presets.lstrip().startswith("'claude-cli'"), "it should be the first option listed"
+    assert "no API key" in presets
+
+
+def test_mac_app_does_not_call_a_subscription_user_unconfigured():
+    """The bug this guards: providerConfigured was Boolean(apiKey).
+
+    That reported the one mode which needs no key as the one mode that was
+    broken, and sent the user off to configure a provider they already had.
+    """
+    main = MAIN_JS.read_text()
+    assert "isProviderConfigured" in main
+    assert "Boolean(settings.apiKey || env.OPENAI_API_KEY)," not in main
+    helper = main.split("function isProviderConfigured", 1)[1].split("\n}", 1)[0]
+    assert "claude-cli" in helper and "return true" in helper
+
+
+def test_guided_install_prefers_a_keyless_path_when_one_is_available():
+    script = (ROOT / "guided-install.sh").read_text()
+    assert 'PROVIDER_PRESET_DEFAULT="claude-cli"' in script
+    assert "command -v claude" in script
+    # It must not ask a keyless path for a key.
+    claude_branch = script.split('if [ "$provider_preset" = "claude-cli" ]; then', 1)[1].split("else", 1)[0]
+    assert 'api_key=""' in claude_branch

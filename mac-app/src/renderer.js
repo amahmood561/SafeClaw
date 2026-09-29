@@ -12,6 +12,12 @@ const permissionProfiles = [
 
 const approvalModes = ['ask', 'deny', 'auto'];
 const providerPresets = {
+  'claude-cli': {
+    label: 'Claude Code subscription (no API key)',
+    baseUrl: 'subprocess://claude',
+    model: '',
+    hint: 'Uses the Claude Code you are already logged into. No API key to paste. Requests are billed to that subscription and prompts leave this machine.',
+  },
   openai: {
     label: 'OpenAI',
     baseUrl: 'https://api.openai.com/v1',
@@ -132,10 +138,18 @@ function updateProviderHint() {
 }
 
 function applyProviderPreset() {
-  const preset = providerPresets[$('providerPreset').value] || providerPresets.custom;
+  const chosen = $('providerPreset').value;
+  const preset = providerPresets[chosen] || providerPresets.custom;
   if (preset.baseUrl) $('baseUrl').value = preset.baseUrl;
-  if (preset.model) $('model').value = preset.model;
-  if ($('providerPreset').value === 'ollama' && !$('apiKey').value) $('apiKey').value = 'ollama';
+  $('model').value = preset.model || '';
+  if (chosen === 'ollama' && !$('apiKey').value) $('apiKey').value = 'ollama';
+
+  // No key on this path, so do not present an empty box that looks unfinished.
+  const keyField = $('apiKey');
+  const usesKey = chosen !== 'claude-cli';
+  keyField.disabled = !usesKey;
+  keyField.placeholder = usesKey ? '' : 'not needed — using your Claude Code login';
+  if (!usesKey) keyField.value = '';
   updateProviderHint();
   refreshRuntimeInfo();
   updateChatContext();

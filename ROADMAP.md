@@ -70,7 +70,8 @@ returns structured JSON and a resumable `session_id`, with no key anywhere.
 | API key | Yes | Per token | OpenAI / OpenRouter key |
 
 **Gate:** install → log into Claude Code → useful result, with zero keys entered anywhere.
-**Met.** A two-step task (list the workspace, read a file, report) ran end to end in 10.4s.
+**Met**, on all three surfaces: `safeclaw init`, `guided-install.sh` and the Mac app,
+each defaulting to the subscription when the `claude` binary is present. A two-step task (list the workspace, read a file, report) ran end to end in 10.4s.
 
 ### Measured while building this
 

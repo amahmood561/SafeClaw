@@ -32,10 +32,13 @@ safeclaw chat
 | **Your Claude Code login** | Yes | Your existing subscription | [Claude Code](https://claude.com/claude-code), logged in |
 | **Hosted API** | Yes | Per token | An OpenAI / Groq / OpenRouter key |
 
-The middle one is worth knowing about: if you already use Claude Code, SafeClaw can
-borrow that login by shelling out to it. **No API key anywhere.** Claude Code's own
-tools are disabled for those calls, so Claude decides what to do and SafeClaw's
-permission profiles still perform every action.
+**If you already pay for Claude Code, you do not need an API key.** SafeClaw borrows
+that login by shelling out to the `claude` command, and `init`, the guided installer
+and the Mac app all offer it as the first option when they find the binary.
+
+Claude Code's own tools are disabled on those calls, so Claude decides what to do and
+SafeClaw's permission profiles still perform every action. Requests are billed to that
+subscription, and prompts leave your machine — choose Local if that matters.
 
 ## Product direction
 

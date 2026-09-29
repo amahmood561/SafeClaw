@@ -4,6 +4,15 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// A provider is configured when it can actually run, which is not the same as
+// having an API key. The claude-cli path has no key by design; gating on one
+// reported the only keyless mode as the only broken mode.
+function isProviderConfigured(settings, env) {
+  const preset = settings.providerPreset || env.SAFECLAW_PROVIDER_PRESET;
+  if (preset === 'claude-cli') return true;
+  return Boolean(settings.apiKey || env.OPENAI_API_KEY);
+}
+
 const DEFAULTS = {
   repoUrl: 'https://github.com/amahmood561/SafeClaw.git',
   ref: 'main',
@@ -232,7 +241,7 @@ ipcMain.handle('runtime-info', (_event, settings = {}) => {
     venvPath: venv,
     envPath,
     configExists: fs.existsSync(envPath),
-    providerConfigured: Boolean(settings.apiKey || env.OPENAI_API_KEY),
+    providerConfigured: isProviderConfigured(settings, env),
     baseUrl: settings.baseUrl || env.OPENAI_BASE_URL || DEFAULTS.baseUrl,
     model: settings.model || env.OPENAI_MODEL || DEFAULTS.model,
     workspace,

@@ -198,21 +198,30 @@ cat <<'EOF'
 
 LLM settings
 
-SafeClaw uses an OpenAI-compatible API. Leave the key blank if you want to add
-it later in the .env file.
+How should SafeClaw think?
 
-Provider presets:
-  openai     https://api.openai.com/v1
-  ollama     http://localhost:11434/v1
-  groq       https://api.groq.com/openai/v1
-  openrouter https://openrouter.ai/api/v1, useful for Claude
-  litellm    http://localhost:4000/v1
-  custom     enter your own OpenAI-compatible endpoint
+  claude-cli  your existing Claude Code subscription. No API key.
+  ollama      a local model. Nothing leaves this machine. No API key.
+  openai      https://api.openai.com/v1
+  groq        https://api.groq.com/openai/v1
+  openrouter  https://openrouter.ai/api/v1
+  litellm     http://localhost:4000/v1
+  custom      your own OpenAI-compatible endpoint
+
+The first two need no key at all.
 
 EOF
 
-provider_preset="$(prompt "Provider preset: openai, ollama, groq, openrouter, litellm, custom" "$PROVIDER_PRESET_DEFAULT")"
+if command -v claude >/dev/null 2>&1; then
+  printf '  Claude Code found at %s\n\n' "$(command -v claude)"
+  PROVIDER_PRESET_DEFAULT="claude-cli"
+elif command -v ollama >/dev/null 2>&1; then
+  PROVIDER_PRESET_DEFAULT="ollama"
+fi
+
+provider_preset="$(prompt "Provider preset" "$PROVIDER_PRESET_DEFAULT")"
 case "$provider_preset" in
+  claude-cli) BASE_URL_DEFAULT="subprocess://claude"; MODEL_DEFAULT="" ;;
   openai) BASE_URL_DEFAULT="https://api.openai.com/v1"; MODEL_DEFAULT="gpt-4.1-mini" ;;
   ollama) BASE_URL_DEFAULT="http://localhost:11434/v1"; MODEL_DEFAULT="llama3.1" ;;
   groq) BASE_URL_DEFAULT="https://api.groq.com/openai/v1"; MODEL_DEFAULT="openai/gpt-oss-20b" ;;
@@ -220,9 +229,20 @@ case "$provider_preset" in
   litellm) BASE_URL_DEFAULT="http://localhost:4000/v1"; MODEL_DEFAULT="anthropic/claude-3-5-sonnet-latest" ;;
   *) provider_preset="custom" ;;
 esac
-api_key="$(prompt_secret "OpenAI API key, hidden input, optional")"
-base_url="$(prompt "OpenAI-compatible base URL" "$BASE_URL_DEFAULT")"
-model="$(prompt "Model" "$MODEL_DEFAULT")"
+
+if [ "$provider_preset" = "claude-cli" ]; then
+  # Asking for a key here is how you teach someone the keyless path needs a key.
+  api_key=""
+  base_url="subprocess://claude"
+  model=""
+  if ! command -v claude >/dev/null 2>&1; then
+    printf '  Note: the `claude` command was not found. Install Claude Code and run `claude` once to log in.\n'
+  fi
+else
+  api_key="$(prompt_secret "API key, hidden input, optional")"
+  base_url="$(prompt "OpenAI-compatible base URL" "$BASE_URL_DEFAULT")"
+  model="$(prompt "Model" "$MODEL_DEFAULT")"
+fi
 
 cat <<'EOF'
 
